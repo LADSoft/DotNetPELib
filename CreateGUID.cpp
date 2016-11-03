@@ -37,7 +37,6 @@
     contact information:
         email: TouchStone222@runbox.com <David Lindauer>
 */
-#include <Windows.h>
 #include <random>
 #include <array>
 #include <algorithm>
