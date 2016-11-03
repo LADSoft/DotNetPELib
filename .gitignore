@@ -1,0 +1,4 @@
+.vs
+*.db
+release
+debug
