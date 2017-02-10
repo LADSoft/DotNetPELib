@@ -21,84 +21,84 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DLLExportReader.h">
+    <ClInclude Include="..\..\netil\netlib\DLLExportReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DotNetPELib.h">
+    <ClInclude Include="..\..\netil\netlib\DotNetPELib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MZHeader.h">
+    <ClInclude Include="..\..\netil\netlib\PEFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PEFile.h">
+    <ClInclude Include="..\..\netil\netlib\PEHeader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PEHeader.h">
+    <ClInclude Include="..\..\netil\netlib\MZHeader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Allocator.cpp">
+    <ClCompile Include="..\..\netil\netlib\Allocator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AssemblyDef.cpp">
+    <ClCompile Include="..\..\netil\netlib\AssemblyDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Class.cpp">
+    <ClCompile Include="..\..\netil\netlib\Class.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CodeContainer.cpp">
+    <ClCompile Include="..\..\netil\netlib\CodeContainer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CreateGUID.cpp">
+    <ClCompile Include="..\..\netil\netlib\CreateGUID.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DataContainer.cpp">
+    <ClCompile Include="..\..\netil\netlib\DataContainer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DLLExportReader.cpp">
+    <ClCompile Include="..\..\netil\netlib\DLLExportReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Enum.cpp">
+    <ClCompile Include="..\..\netil\netlib\Enum.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Field.cpp">
+    <ClCompile Include="..\..\netil\netlib\Field.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Instruction.cpp">
+    <ClCompile Include="..\..\netil\netlib\Instruction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Method.cpp">
+    <ClCompile Include="..\..\netil\netlib\Method.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MethodSignature.cpp">
+    <ClCompile Include="..\..\netil\netlib\MethodSignature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NameSpace.cpp">
+    <ClCompile Include="..\..\netil\netlib\NameSpace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NetSignature.cpp">
+    <ClCompile Include="..\..\netil\netlib\NetSignature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Operand.cpp">
+    <ClCompile Include="..\..\netil\netlib\Operand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PEFile.cpp">
+    <ClCompile Include="..\..\netil\netlib\PEFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PELib.cpp">
+    <ClCompile Include="..\..\netil\netlib\PELib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PELibError.cpp">
+    <ClCompile Include="..\..\netil\netlib\PELibError.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Qualifiers.cpp">
+    <ClCompile Include="..\..\netil\netlib\Qualifiers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Type.cpp">
+    <ClCompile Include="..\..\netil\netlib\Type.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Value.cpp">
+    <ClCompile Include="..\..\netil\netlib\Value.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

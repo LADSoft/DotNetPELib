@@ -500,13 +500,13 @@ namespace DotNetPELib
     {
         int n = 0;
         // assembly version
-        *(Word *)(dest + n) = 0;
+        *(Word *)(dest + n) = major_;
         n += 2;
-        *(Word *)(dest + n) = 0;
+        *(Word *)(dest + n) = minor_;
         n += 2;
-        *(Word *)(dest + n) = 0;
+        *(Word *)(dest + n) = build_;
         n += 2;
-        *(Word *)(dest + n) = 0;
+        *(Word *)(dest + n) = revision_;
         n += 2;
         *(DWord *)(dest + n) = flags_;
         n += 4;
