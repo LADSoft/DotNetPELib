@@ -47,23 +47,55 @@ namespace DotNetPELib
         field->SetContainer(this);
         fields_.push_back(field);
     }
-    size_t DataContainer::ParentNamespace() const
+    size_t DataContainer::ParentNamespace(PELib &peLib) const
     {
         DataContainer *current = this->Parent();
         while (current && typeid(*current) != typeid(Namespace))
             current = current->Parent();
         if (current)
+        {
+            if (current && current->InAssemblyRef())
+                static_cast<Namespace *>(current)->PEDump(peLib);
             return current->PEIndex();
+        }
         return 0;
     }
-    size_t DataContainer::ParentClass() const
+    size_t DataContainer::ParentClass(PELib &peLib) const
     {
         DataContainer *current = Parent();
         if (current && typeid(*current) == typeid(Class))
         {
+            if (current && current->InAssemblyRef())
+                static_cast<Class *>(current)->PEDump(peLib);
             return current->PEIndex();
         }
         return 0;
+    }
+    size_t DataContainer::ParentAssembly(PELib &peLib) const
+    {
+        // the parent assembly is always at top of the datacontainer tree
+        DataContainer *current = Parent();
+        while (current->Parent() && typeid(*current) != typeid(AssemblyDef))
+        {
+            current = current->Parent();
+        }
+        if (current && current->InAssemblyRef())
+            static_cast<AssemblyDef *>(current)->PEDump(peLib);
+        return current->PEIndex();
+    }
+    DataContainer *DataContainer::FindContainer(std::vector<std::string>& split, size_t &n)
+    {
+        n = 0;
+        DataContainer *current = this, *rv = current;
+        for (int i=0; i < split.size(); i++)
+        {
+            current = current->FindContainer(split[i]);
+            if (!current)
+                break;
+            rv = current;
+            n++;
+        }
+        return rv;
     }
     bool DataContainer::ILSrcDump(PELib &peLib) const
     {
@@ -113,5 +145,43 @@ namespace DotNetPELib
                     types |= basetypeValue;
                 else
                     types |= basetypeObject;
+    }
+    bool DataContainer::Traverse(Callback &callback) const
+    {
+        for (auto child : children_)
+            if (typeid(*child) == typeid(Class))
+            {
+                if (!callback.EnterClass(static_cast<const Class *>(child)))
+                    continue;
+                if (!child->Traverse(callback))
+                    return true;
+                if (!callback.ExitClass(static_cast<const Class *>(child)))
+                    return false;
+            }
+            else if (typeid(*child) == typeid(Enum))
+            {
+                if (!callback.EnterEnum(static_cast<const Enum *>(child)))
+                    continue;
+                if (!child->Traverse(callback))
+                    return true;
+                if (!callback.ExitEnum(static_cast<const Enum *>(child)))
+                    return false;
+            }
+            else if (typeid(*child) == typeid(Namespace))
+            {
+                if (!callback.EnterNamespace(static_cast<const Namespace *>(child)))
+                    continue;
+                if (!child->Traverse(callback))
+                    return true;
+                if (!callback.ExitNamespace(static_cast<const Namespace *>(child)))
+                    return false;
+            }
+        for (auto field : fields_)
+            if (!callback.EnterField(field))
+                return false;
+        for (auto method : methods_)
+            if (!callback.EnterMethod(static_cast<Method *>(method)))
+                return false;
+        return true;
     }
 }
