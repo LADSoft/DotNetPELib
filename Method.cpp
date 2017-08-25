@@ -135,6 +135,96 @@ namespace DotNetPELib
         }
         return true;
     }
+    void Method::ObjOut(PELib &peLib, int pass) const
+    {
+        peLib.Out() << std::endl << "$mb";
+        flags_.ObjOut(peLib, pass);
+        peLib.Out() << "," << maxStack_ << "," << invokeMode_ << "," << entryPoint_ << ",";
+        if (invokeMode_ == PInvoke)
+            peLib.Out() << peLib.FormatName(pInvokeName_) << pInvokeType_ << ",";
+        prototype_->ObjOut(peLib, pass);
+        for (auto v : varList_)
+        {
+            peLib.Out() << std::endl << "$vb";// << peLib.FormatName(v->Name());
+            v->GetType()->ObjOut(peLib, pass);
+            v->ObjOut(peLib, pass);
+            peLib.Out() << std::endl << "$ve";
+        }
+        CodeContainer::ObjOut(peLib, pass);
+        peLib.Out() << std::endl << "$me";
+    }
+    Method *Method::ObjIn(PELib &peLib, bool definition, Method **rfound)
+    {
+        if (rfound)
+            *rfound = nullptr;
+        Method *rv = nullptr;
+        Qualifiers flags;
+        flags.ObjIn(peLib);
+        char ch;
+        ch = peLib.ObjChar();
+        if (ch != ',')
+            peLib.ObjError(oe_syntax);
+        int stack = peLib.ObjInt();
+        ch = peLib.ObjChar();
+        if (ch != ',')
+            peLib.ObjError(oe_syntax);
+        InvokeMode imode = (InvokeMode)peLib.ObjInt();
+        ch = peLib.ObjChar();
+        if (ch != ',')
+            peLib.ObjError(oe_syntax);
+        int entryPoint = peLib.ObjInt();
+        std::string invokeName;
+        InvokeType itype;
+        if (imode == PInvoke)
+        {
+            ch = peLib.ObjChar();
+            if (ch != ',')
+                peLib.ObjError(oe_syntax);
+            invokeName = peLib.UnformatName();
+            itype = (InvokeType)peLib.ObjInt();
+        }
+        ch = peLib.ObjChar();
+        if (ch != ',')
+            peLib.ObjError(oe_syntax);
+        if (peLib.ObjBegin() != 's')
+            peLib.ObjError(oe_syntax);
+        Method *found = nullptr;
+        MethodSignature *prototype = MethodSignature::ObjIn(peLib, &found, definition);
+        if (!found)
+        {
+            rv = found = peLib.AllocateMethod(prototype, flags, entryPoint);
+            found->MaxStack(stack);
+            if (imode == PInvoke)
+            {
+                found->SetPInvoke(invokeName, itype);
+            }
+        }
+        int n = found->size();
+        while (peLib.ObjBegin() == 'v')
+        {
+            Type *type = Type::ObjIn(peLib);
+            if (peLib.ObjBegin() != 'l')
+                peLib.ObjError(oe_syntax);
+            Local *v =Local::ObjIn(peLib);
+            v->SetType(type);
+            if (!n)
+                found->AddLocal(v);
+            if (peLib.ObjEnd() != 'v')
+                peLib.ObjError(oe_syntax);
+        }
+        peLib.SetCodeContainer(rv);
+        if (peLib.ObjBegin(false) == 'I')
+        {
+            ((CodeContainer *)found)->ObjIn(peLib);
+            if (peLib.ObjEnd() != 'm')
+                peLib.ObjError(oe_syntax);
+        }
+        else if (peLib.ObjEnd(false) != 'm')
+            peLib.ObjError(oe_syntax);
+        if (rfound)
+            *rfound = found;
+        return rv;
+    }
     bool Method::PEDump(PELib &peLib)
     {
         if (!IsPInvoke() && InAssemblyRef())

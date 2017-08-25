@@ -161,6 +161,196 @@ namespace DotNetPELib
         peLib.Out() << ")";
         return true;
     }
+    void MethodSignature::ObjOut(PELib &peLib, int pass) const
+    {
+        if (pass == -1) // as a reference, we have to do a full signature because of overloads
+                        // and here we need the fully qualified name
+        {
+            peLib.Out() << std::endl << "$sb" << peLib.FormatName(Qualifiers::GetObjName(name_, container_));
+        }
+        else
+        {
+            // as a definition...
+            peLib.Out() << std::endl << "$sb" << peLib.FormatName(name_);
+            peLib.Out() << external_ << ",";
+            peLib.Out() << flags_ << ",";
+        }
+        returnType_->ObjOut(peLib, pass);
+        for (auto p : params)
+        {
+            p->ObjOut(peLib, 1);
+        }
+        if (varargParams_.size())
+        {
+            peLib.Out() << std::endl << "$vb";
+            for (auto p : varargParams_)
+            {
+                p->ObjOut(peLib, 1);
+            }
+            peLib.Out() << std::endl << "$ve";
+        }
+        peLib.Out() << std::endl << "$se";
+    }
+    MethodSignature *MethodSignature::ObjIn(PELib &peLib, Method **found, bool definition)
+    {
+        if (found)
+            *found = nullptr;
+        std::string name = peLib.UnformatName();
+        int external;
+        char ch;
+        int flags=0;
+        Type *returnType;
+        if (definition)
+        {
+            external = peLib.ObjInt();
+            ch = peLib.ObjChar();
+            if (ch != ',')
+                peLib.ObjError(oe_syntax);
+            flags = peLib.ObjInt();
+            ch = peLib.ObjChar();
+            if (ch != ',')
+                peLib.ObjError(oe_syntax);
+        }
+        returnType = Type::ObjIn(peLib);
+        std::vector<Param *> args, vargs;
+        while (peLib.ObjBegin() == 'p')
+        {
+            Param *p = Param::ObjIn(peLib);
+            args.push_back(p);
+        }
+        if (peLib.ObjBegin(false) == 'v')
+        {
+            while (peLib.ObjBegin() == 'p')
+            {
+                Param *p = Param::ObjIn(peLib);
+                vargs.push_back(p);
+            }
+            if (peLib.ObjEnd(false) != 'v')
+                peLib.ObjError(oe_syntax);
+            if (peLib.ObjEnd() != 's')
+                peLib.ObjError(oe_syntax);
+        }
+        else
+        {
+            if (peLib.ObjEnd(false) != 's')
+                peLib.ObjError(oe_syntax);
+        }
+        MethodSignature *rv =nullptr;
+        std::vector<Type *>targs;
+        for (auto p : args)
+        {
+            targs.push_back(p->GetType());
+        }
+        Method *pinvoke = peLib.FindPInvoke(name);
+        if (pinvoke)
+        {
+            if (!vargs.size())
+            {
+                if (found)
+                    *found = pinvoke;
+                rv = pinvoke->Signature();
+            }
+            else
+            {
+                MethodSignature *sig = peLib.FindPInvokeWithVarargs(name, vargs);
+                if (sig)
+                {
+                    return sig;
+                }
+                else
+                {
+                    rv = peLib.AllocateMethodSignature(name, MethodSignature::Vararg, nullptr);
+                    rv->SignatureParent(pinvoke->Signature()); // tie it to the parent pinvoke
+                    rv->ReturnType(returnType);
+                    for (auto p : args)
+                        rv->AddParam(p);
+                    for (auto v : vargs)
+                        rv->AddVarargParam(v);
+                    peLib.AddPInvokeWithVarargs(rv);
+                }
+            }
+        }
+        else if (!peLib.GetContainer()) // defining a pinvoke
+        {
+            rv = peLib.AllocateMethodSignature(name, flags, nullptr);
+            rv->ReturnType(returnType);
+            for (auto p : args)
+                rv->AddParam(p);
+            for (auto v : vargs)
+                rv->AddVarargParam(v);
+
+        }
+        else if (definition)
+        {
+            for (auto m : peLib.GetContainer()->Methods())
+            {
+                Method *c = static_cast<Method *>(m);
+                if (c->Signature()->Name() == name && c->Signature()->Matches(targs))
+                {
+                    if (found)
+                        *found = c;
+                    rv = c->Signature();
+                }
+
+            }
+            if (!rv)
+            {
+                rv = peLib.AllocateMethodSignature(name, flags,peLib.GetContainer());
+                rv->ReturnType(returnType);
+                rv->External(external);
+                for (auto p : args)
+                    rv->AddParam(p);
+                for (auto v : vargs)
+                    rv->AddVarargParam(v);
+            }
+            else
+            {
+                if (!external)
+                {
+                    if (rv->External())
+                    {
+                        auto its = args.begin();
+                        auto itd = rv->params.begin();
+                        while (its != args.end() && itd != rv->params.end())
+                        {
+                            (*itd)->Name((*its)->Name());
+                            ++its;
+                            ++itd;
+                        }
+                    }
+                    rv->External(false);
+                }
+                if (!rv->ReturnType()->Matches(returnType))
+                    peLib.ObjError(oe_typemismatch);
+            }
+            if (!external)
+                rv->Definition();
+        }
+        else if (!name.size())
+        {
+            rv = peLib.AllocateMethodSignature(name, flags, peLib.GetContainer());
+            rv->ReturnType(returnType);
+            for (auto p : args)
+                rv->AddParam(p);
+            for (auto v : vargs)
+                rv->AddVarargParam(v);
+        }
+        else
+        {
+            Method *m;
+            if (peLib.Find(name, &m, targs) == PELib::s_method)
+            {
+                rv = m->Signature();
+                if (found)
+                    *found = m;
+            }
+            else
+            {
+                peLib.ObjError(oe_nomethod);
+            }
+        }
+        return rv;
+    }
     void MethodSignature::ILSignatureDump(PELib &peLib)
     {
         returnType_->ILSrcDump(peLib);

@@ -62,7 +62,10 @@ void DumpModule(const ModuleTableEntry& table)
 }
 void DumpTypeRef(const TypeRefTableEntry& table)
 {
-    std::cout << "TypeRef: " << StringOf(table.typeNameSpaceIndex_) << " " << StringOf(table.typeNameIndex_)<< std::endl;
+    if (table.resolution_.tag_ == 2)
+	std::cout << "TypeRef: " << "[" << table.resolution_.index_ << "]" << StringOf(table.typeNameSpaceIndex_) << " " << StringOf(table.typeNameIndex_)<< std::endl;
+    else
+	std::cout << "TypeRef: " << StringOf(table.typeNameSpaceIndex_) << " " << StringOf(table.typeNameIndex_)<< std::endl;
 
 }
 void DumpTypeDef(const TypeDefTableEntry& table)
@@ -75,7 +78,7 @@ void DumpField(const FieldTableEntry& table)
 }
 void DumpMethodDef(const MethodDefTableEntry& table)
 {
-    std::cout << "MethodDef: " << std::hex << table.flags_ << " " << std::hex << table.implFlags_ << " " << StringOf(table.nameIndex_)<< std::endl;
+    std::cout << "MethodDef: " << std::hex << table.flags_ << " " << std::hex << table.implFlags_ << " " << std::hex<< table.rva_ << " " << StringOf(table.nameIndex_)<< std::endl;
 }
 void DumpParam(const ParamTableEntry& table)
 {
@@ -281,7 +284,7 @@ int main(int argc, char *argv[])
 {
     if (argc > 1)
     {
-        int n = r.ManagedLoad(argv[1]);
+        int n = r.ManagedLoad(argv[1],0,0,0,0);
         if (!n)
         {
             for (int i=0; i < MaxTables; i++)

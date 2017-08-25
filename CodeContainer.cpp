@@ -47,7 +47,8 @@ namespace DotNetPELib
     }
     void CodeContainer::AddInstruction(Instruction *instruction)
     {
-        instructions_.push_back(instruction);
+        if (instruction)
+            instructions_.push_back(instruction);
     }
 
     bool CodeContainer::ILSrcDump(PELib &peLib) const
@@ -56,12 +57,43 @@ namespace DotNetPELib
             instruction->ILSrcDump(peLib);
         return true;
     }
+    void CodeContainer::ObjOut(PELib &peLib, int pass) const
+    {
+        if (pass == 3 && instructions_.size())
+        {
+            peLib.Out() << std::endl << "$Ib";
+            for (auto instruction : instructions_)
+                instruction->ObjOut(peLib, pass);
+            peLib.Out() << std::endl << "$Ie";
+        }
+    }
+    void CodeContainer::ObjIn(PELib &peLib)
+    {
+        if (instructions_.size())
+        {
+            // duplicate public..   ignore the second instance
+            //peLib.ObjError(oe_syntax);
+            while (peLib.ObjBegin() == 'i')
+            {
+                Instruction::ObjIn(peLib);
+            }
+        }
+        else
+        {
+            while (peLib.ObjBegin() == 'i')
+            {
+                AddInstruction(Instruction::ObjIn(peLib));
+            }
+        }
+        if (peLib.ObjEnd(false) != 'I')
+            peLib.ObjError(oe_syntax);
+    }
     Byte * CodeContainer::Compile(PELib &peLib, size_t &sz)
     {
         Byte *rv = nullptr;
         CalculateOffsets();
         LoadLabels();
-        Instruction *last = instructions_.back();
+        Instruction *last = instructions_.size() ? instructions_.back() : nullptr;
         if (last)
         {
             sz = last->Offset() + last->InstructionSize();

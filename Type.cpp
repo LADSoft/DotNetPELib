@@ -51,6 +51,47 @@ namespace DotNetPELib
         "Int16", "UInt16", "Int32", "UInt32",
         "Int64", "UInt64", "Int", "UInt", "Single", "Double", "", "String"
     };
+    bool Type::Matches(Type *right)
+    {
+        if (tp_ != right->tp_)
+            return false;
+        if (arrayLevel_ != right->arrayLevel_)
+            return false;
+        if (pointerLevel_ != right->pointerLevel_)
+            return false;
+        if (byRef_ != right->byRef_)
+            return false;
+        if (tp_ == cls && typeRef_ != right->typeRef_)
+        {
+            int n1, n2;
+            n1 = typeRef_->Name().find("[]");
+            n2 = right->typeRef_->Name().find("[]");
+            if (n1 != std::string::npos || n2 != std::string::npos)
+            {
+                bool transfer = false;
+                if (n1 == std::string::npos)
+                {
+                    n1 = typeRef_->Name().find('[');
+                }
+                else
+                {
+                    transfer = true;
+                    n2 = right->typeRef_->Name().find('[');
+                }
+                if (n1 != n2)
+                    return false;
+                if (typeRef_->Name().substr(0, n1) != right->typeRef_->Name().substr(0, n2))
+                    return false;
+                if (transfer)
+                    typeRef_ = right->typeRef_;
+            }
+            else
+                return false;
+        }
+        if (tp_ == method && methodRef_ != right->methodRef_)
+            return false;
+        return true;
+    }
     bool Type::ILSrcDump(PELib &peLib) const
     {
         if (tp_ == cls)
@@ -91,6 +132,85 @@ namespace DotNetPELib
             peLib.Out() << "&";
         return true;
     }
+    void Type::ObjOut(PELib &peLib, int pass) const
+    {
+        peLib.Out() <<  std::endl << "$tb" << tp_ << "," << byRef_ << "," << arrayLevel_ << "," << pointerLevel_;
+        if (tp_ == cls)
+        {
+            typeRef_->ObjOut(peLib, -1);
+        }
+        else if (tp_ == method)
+        {
+            methodRef_->ObjOut(peLib, -1);
+        }
+        peLib.Out() <<  std::endl << "$te";
+    }
+    Type *Type::ObjIn(PELib &peLib)
+    {
+        if (peLib.ObjBegin() == 'B')
+        {
+            Type *rv = BoxedType::ObjIn(peLib);
+            if (peLib.ObjEnd() != 'B')
+                peLib.ObjError(oe_syntax);
+            return rv;
+        }
+        else if (peLib.ObjBegin(false) == 't')
+        {
+
+            BasicType tp = (BasicType)peLib.ObjInt();
+            char ch;
+            ch = peLib.ObjChar();
+            if (ch != ',')
+                peLib.ObjError(oe_syntax);
+            int byRef = peLib.ObjInt();
+            ch = peLib.ObjChar();
+            if (ch != ',')
+                peLib.ObjError(oe_syntax);
+            int arrayLevel = peLib.ObjInt();
+            ch = peLib.ObjChar();
+            if (ch != ',')
+                peLib.ObjError(oe_syntax);
+            int pointerLevel = peLib.ObjInt();
+            Type *rv = nullptr;
+            if (tp == cls)
+            {
+                DataContainer *typeref = nullptr;
+                if (peLib.ObjBegin() == 'c')
+                {
+                    typeref = Class::ObjIn(peLib, false);
+                }
+                else if (peLib.ObjBegin(false) == 'E')
+                {
+                    typeref = Enum::ObjIn(peLib, false);
+                }
+                else
+                {
+                    peLib.ObjError(oe_syntax);
+                }
+                rv = peLib.AllocateType(typeref);
+            }
+            else if (tp == method)
+            {
+                MethodSignature *methodRef = MethodSignature::ObjIn(peLib, nullptr);
+                rv = peLib.AllocateType(methodRef);
+            }
+            else
+            {
+                rv = peLib.AllocateType(tp, 0);
+            }
+            rv->PointerLevel(pointerLevel);
+            rv->ArrayLevel(arrayLevel);
+            rv->ByRef(byRef);
+            if (peLib.ObjEnd() != 't')
+                peLib.ObjError(oe_syntax);
+            return rv;
+        }
+        else
+        {
+            peLib.ObjError(oe_syntax);
+        }
+        return nullptr;
+    }
     size_t Type::Render(PELib &peLib, Byte *result)
     {
         switch (tp_)
@@ -99,6 +219,8 @@ namespace DotNetPELib
             if (typeRef_->InAssemblyRef())
             {
                 typeRef_->PEDump(peLib);
+                if (typeRef_->PEIndex() > 9)
+                    printf("hi");
                 *(int *)result = typeRef_->PEIndex() | (tTypeRef << 24);
             }
             else
@@ -134,6 +256,15 @@ namespace DotNetPELib
         peLib.Out() << "[mscorlib]System." << typeNames_[tp_];
         return true;
     }
+    void BoxedType::ObjOut(PELib &peLib, int pass) const
+    {
+        peLib.Out() <<  std::endl << "$Bb" << tp_ <<  std::endl << "$Be";
+    }
+    BoxedType *BoxedType::ObjIn(PELib &peLib)
+    {
+        Type::BasicType type = (Type::BasicType)peLib.ObjInt();
+        return peLib.AllocateBoxedType(type);
+    }
     size_t BoxedType::Render(PELib &peLib, Byte *result)
     {
         if (!peIndex_)
@@ -149,6 +280,8 @@ namespace DotNetPELib
                 peIndex_ =  static_cast<Class *>(result)->PEIndex();
             }
         }
+        if (peIndex_ > 9)
+            printf("hi");
         *(int *)result = peIndex_ | (tTypeRef << 24);
         return 4;
     }
