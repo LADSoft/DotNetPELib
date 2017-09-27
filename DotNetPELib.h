@@ -51,7 +51,7 @@
 
 // reference changelog.txt to see what the changes are
 //
-#define DOTNETPELIB_VERSION "2.9"
+#define DOTNETPELIB_VERSION "2.10"
 
 // this is the main library header
 // it allows creation of the methods and data that would be dumped into 
@@ -748,6 +748,7 @@ namespace DotNetPELib
         ///** Add an enumeration constant
         // Note that the field does need to be part of an enumeration
         void AddEnumValue(longlong Value, ValueSize Size);
+        longlong EnumValue() const { return enumValue_;  }
         ///** Add an SDATA initializer
         void AddInitializer(Byte *bytes, int len); // this will be readonly in ILONLY assemblies
         ///** Field Name
