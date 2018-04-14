@@ -1,6 +1,9 @@
 # DotNetPELib
 
-DotNetPELib is a library which abstracts managed information such as namespaces, classes, fields, methods, properties, and instructions.  The information can then be used to generate assembly language source files, or PE executables or DLLs.
+DotNetPELib is a library which abstracts managed information such as namespaces, classes, fields, methods, properties, and instructions.  The information can then be used to generate intermediate language source files, or PE executables or DLLs.
+
+Build Status
+[![Build status](https://ci.appveyor.com/api/projects/status/rtuxe2ef8w7udjda?svg=true)](https://ci.appveyor.com/project/LADSoft/dotnetpelib)
 
 The library has been tested as the backend for the OCCIL compiler, and is reasonably functional.  That said this version of the library does have various limitations; not all aspects of the managed environment are enabled at this time.
 

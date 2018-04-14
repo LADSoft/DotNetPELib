@@ -1,0 +1,10 @@
+image: Visual Studio 2017
+
+build_script:
+        - ps: "cd ..\\..; move projects\\DotNetPELib .; cd msil; .\\ms; cd ..; move DotNetPELib projects"
+
+artifacts:
+  - path: "Release\\DotNetPELib.lib"
+    name: DotNetPELib
+  - path: "Release\\NetLink.exe"
+    name: NetLink
