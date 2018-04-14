@@ -8,3 +8,5 @@ artifacts:
     name: DotNetPELib
   - path: "Release\\NetLink.exe"
     name: NetLink
+  - path: "DotNetPELib.h"
+    name: Header File
