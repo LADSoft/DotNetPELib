@@ -1,42 +1,27 @@
-/*
-    Software License Agreement (BSD License)
+/* Software License Agreement
+ * 
+ *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ * 
+ *     This file is part of the Orange C Compiler package.
+ * 
+ *     The Orange C Compiler package is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     The Orange C Compiler package is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of 
 
-    Copyright (c) 2016, David Lindauer, (LADSoft).
-    All rights reserved.
-
-    Redistribution and use of this software in source and binary forms,
-    with or without modification, are permitted provided that the following
-    conditions are met:
-
-    * Redistributions of source code must retaintythe above
-      copyright notice, this list of conditions and the
-      following disclaimer.
-
-    * Redistributions in binary form must reproduce the above
-      copyright notice, this list of conditions and the
-      following disclaimer in the documentation and/or other
-      materials provided with the distribution.
-
-    * Neither the name of LADSoft nor the names of its
-      contributors may be used to endorse or promote products
-      derived from this software without specific prior
-      written permission of LADSoft.
-
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-    THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-    PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
-    OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-    OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-    WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-    OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-    ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    contact information:
-        email: TouchStone222@runbox.com <David Lindauer>
-*/
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with Orange C.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ *     contact information:
+ *         email: TouchStone222@runbox.com <David Lindauer>
+ * 
+ */
 
 #include <vector>
 #include <string>
@@ -328,11 +313,11 @@ namespace DotNetPELib {
         enum { MAX_PE_OBJECTS = 4 };
 
         // Constructor to instantiate class
-        PEWriter(bool isexe, bool gui, std::string snkFile) : DLL_(!isexe), GUI_(gui), objectBase_(0), valueBase_(0), enumBase_(0),
+        PEWriter(bool isexe, bool gui, const std::string& snkFile) : DLL_(!isexe), GUI_(gui), objectBase_(0), valueBase_(0), enumBase_(0),
             systemIndex_(0), entryPoint_(0), paramAttributeType_(0), paramAttributeData_(0),
             fileAlign_(0x200), objectAlign_(0x2000), imageBase_(0x400000), language_(0x4b0),
             peHeader_(nullptr), peObjects_(nullptr), cor20Header_(nullptr), tablesHeader_(nullptr),
-            snkFile_(snkFile), snkLen_(0) { }
+            snkFile_(snkFile), snkLen_(0), outputFile_(nullptr), peBase_(0), corBase_(0), snkBase_(0) { }
         virtual ~PEWriter();
         // add an entry to one of the tables
         // note the data for the table will be a class inherited from TableEntryBase,
@@ -341,7 +326,7 @@ namespace DotNetPELib {
         // add a method entry to the output list.  Note that Index_(D methods won't be added here.
         void AddMethod(PEMethod *method);
         // various functions to throw things into one of the streams, they return the stream index
-        size_t HashString(std::string utf8);
+        size_t HashString(const std::string& utf8);
         size_t HashUS(std::wstring str);
         size_t HashGUID(Byte *Guid);
         size_t HashBlob(Byte *blobData, size_t blobLen);
@@ -469,7 +454,7 @@ namespace DotNetPELib {
         RSAEncoder rsaEncoder;
         static Byte MZHeader_[];
         static struct DotNetMetaHeader *metaHeader_;
-        static char *streamNames_[];
+        static const char *streamNames_[];
         static Byte defaultUS_[];
     };
 
@@ -497,16 +482,16 @@ namespace DotNetPELib {
         int ReadFromGUID(Byte *buf, size_t len, size_t offset);
         size_t RVAToFileLocation(size_t rva);
         const DNLTable &Table(int i) const { return tables_[i]; }
-        void LibPath(std::string libPath) { libPath_ = libPath;  }
+        void LibPath(const std::string& libPath) { libPath_ = libPath;  }
 
     protected:
-        std::string PEReader::SearchOnPath(std::string assemblyName);
-        std::string FindGACPath(std::string path, std::string fileName, int major, int minor, int build, int revision);
-        std::string SearchForManagedFile(std::string assemblyName, int major, int minor, int build, int revision);
+        std::string SearchOnPath(const std::string& assemblyName);
+        std::string FindGACPath(const std::string& path, const std::string& fileName, int major, int minor, int build, int revision);
+        std::string SearchForManagedFile(const std::string& assemblyName, int major, int minor, int build, int revision);
         void get(void *buffer, size_t offset, size_t len);
         size_t PELocation();
         size_t Cor20Location(size_t PEHeader);
-        void GetStream(size_t Cor20, char *streamName, DWord pos[2]);
+        void GetStream(size_t Cor20, const char *streamName, DWord pos[2]);
         int ReadTables(size_t Cor20);
 
     private:
@@ -855,6 +840,7 @@ namespace DotNetPELib {
     class TableEntryBase
     {
     public:
+        virtual ~TableEntryBase() { }
         virtual int TableIndex() const = 0;
         virtual size_t Render(size_t sizes[MaxTables + ExtraIndexes], Byte *) const = 0;
         virtual size_t Get(size_t sizes[MaxTables + ExtraIndexes], Byte *) = 0;
@@ -1506,7 +1492,7 @@ namespace DotNetPELib {
             Public = 1,
             Private = 2
         };
-        ManifestResourceTableEntry() : flags_(0) { }
+        ManifestResourceTableEntry() : offset_(0), flags_(0) { }
         ManifestResourceTableEntry(DWord offset, DWord flags, size_t name, Implementation implementation) : 
                 offset_(offset), flags_(flags), name_(name), implementation_(implementation) { }
         DWord offset_;
@@ -1587,6 +1573,7 @@ namespace DotNetPELib {
             : flags_(Flags), hdrSize_(3), maxStack_(MaxStack), codeSize_(CodeSize), code_(nullptr), signatureToken_(signature), rva_(0), methodDef_(MethodDef)
         {
             if ((flags_ & 0xfff) == 0)
+            {
                 if (maxStack_ <= 8 && codeSize_ < 64 && localCount == 0 && !hasSEH)
                 {
                     flags_ = flags_ | (int)TinyFormat;
@@ -1595,6 +1582,7 @@ namespace DotNetPELib {
                 {
                     flags_ = flags_ | (int)FatFormat;
                 }
+            }
         }
         enum {
             EHTable = 1,
@@ -1613,5 +1601,27 @@ namespace DotNetPELib {
         size_t methodDef_;
         size_t Write(size_t sizes[MaxTables + ExtraIndexes], std::fstream &out) const;
     };
+    inline char* StrCpy(char *data, size_t len, const char* source)
+    {
+        strncpy(data, source, len);
+        data[len - 1] = '\0';
+        return data;
+    }
+    template<size_t len>
+    inline char *StrCpy(char(&data)[len], const char* source)
+    {
+        return StrCpy(data, len, source);
+    }
+    inline char* StrCat(char *data, size_t len, const char* source)
+    {
+        strncat(data, source, len);
+        data[len - 1] = '\0';
+        return data;
+    }
+    template<size_t len>
+    inline char *StrCat(char(&data)[len], const char* source)
+    {
+        return StrCat(data, len, source);
+    }
 
 } // namespace

@@ -1,42 +1,27 @@
-/*
-Software License Agreement (BSD License)
+/* Software License Agreement
+ *
+ *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ *
+ *     This file is part of the Orange C Compiler package.
+ *
+ *     The Orange C Compiler package is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     The Orange C Compiler package is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License
+ *     along with Orange C.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *     contact information:
+ *         email: TouchStone222@runbox.com <David Lindauer>
+ *
+ */
 
-Copyright (c) 2016, David Lindauer, (LADSoft).
-All rights reserved.
-
-Redistribution and use of this software in source and binary forms,
-with or without modification, are permitted provided that the following
-conditions are met:
-
-* Redistributions of source code must retain the above
-copyright notice, this list of conditions and the
-following disclaimer.
-
-* Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the
-following disclaimer in the documentation and/or other
-materials provided with the distribution.
-
-* Neither the name of LADSoft nor the names of its
-contributors may be used to endorse or promote products
-derived from this software without specific prior
-written permission of LADSoft.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
-OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-contact information:
-email: TouchStone222@runbox.com <David Lindauer>
-*/
 #include "DotNetPELib.h"
 #include "PEFile.h"
 #include <typeinfo>
@@ -52,7 +37,8 @@ void Property::Instance(bool instance)
     if (setter_)
         setter_->Instance(instance);
 }
-void Property::SetContainer(DataContainer *parent, bool add) {
+void Property::SetContainer(DataContainer* parent, bool add)
+{
     if (!parent_)
     {
         parent_ = parent;
@@ -68,18 +54,18 @@ void Property::SetContainer(DataContainer *parent, bool add) {
         }
     }
 }
-void Property::CreateFunctions(PELib &peLib, std::vector<Type *>& indices, bool hasSetter)
+void Property::CreateFunctions(PELib& peLib, std::vector<Type*>& indices, bool hasSetter)
 {
     bool found = false;
-    MethodSignature *prototype;
+    MethodSignature* prototype;
     std::string getter_name = "get_" + name_;
     if (parent_)
         for (auto m : parent_->Methods())
         {
-            if (static_cast<Method *>(m)->Signature()->Name() == getter_name)
+            if (static_cast<Method*>(m)->Signature()->Name() == getter_name)
             {
                 found = true;
-                getter_ = static_cast<Method *>(m);
+                getter_ = static_cast<Method*>(m);
                 break;
             }
         }
@@ -94,10 +80,10 @@ void Property::CreateFunctions(PELib &peLib, std::vector<Type *>& indices, bool 
         if (parent_)
             for (auto m : parent_->Methods())
             {
-                if (static_cast<Method *>(m)->Signature()->Name() == setter_name)
+                if (static_cast<Method*>(m)->Signature()->Name() == setter_name)
                 {
                     found = true;
-                    setter_ = static_cast<Method *>(m);
+                    setter_ = static_cast<Method*>(m);
                     break;
                 }
             }
@@ -128,30 +114,30 @@ void Property::CreateFunctions(PELib &peLib, std::vector<Type *>& indices, bool 
         }
     }
 }
-void Property::CallGet(PELib &peLib, CodeContainer *code)
+void Property::CallGet(PELib& peLib, CodeContainer* code)
 {
     if (getter_)
     {
-        code->AddInstruction(peLib.AllocateInstruction(Instruction::i_call,
-            peLib.AllocateOperand(peLib.AllocateMethodName(getter_->Signature()))));
+        code->AddInstruction(
+            peLib.AllocateInstruction(Instruction::i_call, peLib.AllocateOperand(peLib.AllocateMethodName(getter_->Signature()))));
     }
 }
-void Property::CallSet(PELib &peLib, CodeContainer *code)
+void Property::CallSet(PELib& peLib, CodeContainer* code)
 {
     if (setter_)
     {
-        code->AddInstruction(peLib.AllocateInstruction(Instruction::i_call,
-            peLib.AllocateOperand(peLib.AllocateMethodName(setter_->Signature()))));
+        code->AddInstruction(
+            peLib.AllocateInstruction(Instruction::i_call, peLib.AllocateOperand(peLib.AllocateMethodName(setter_->Signature()))));
     }
 }
-bool Property::ILSrcDump(PELib &peLib) const
+bool Property::ILSrcDump(PELib& peLib) const
 {
     peLib.Out() << ".property ";
     if (flags_ & SpecialName)
         peLib.Out() << "specialname ";
     if (instance_)
         peLib.Out() << "instance ";
-    type_->ILSrcDump(peLib) ;
+    type_->ILSrcDump(peLib);
     peLib.Out() << " " << name_ << "() {" << std::endl;
     peLib.Out() << ".get ";
     getter_->Signature()->ILSignatureDump(peLib);
@@ -165,23 +151,23 @@ bool Property::ILSrcDump(PELib &peLib) const
     peLib.Out() << "}";
     return true;
 }
-void Property::ObjOut(PELib &peLib, int pass) const
+void Property::ObjOut(PELib& peLib, int pass) const
 {
-    peLib.Out() <<  std::endl << "$Pb" << peLib.FormatName(name_) << instance_ << ",";
+    peLib.Out() << std::endl << "$Pb" << peLib.FormatName(name_) << instance_ << ",";
     peLib.Out() << flags_ << ",";
     type_->ObjOut(peLib, pass);
     getter_->ObjOut(peLib, -1);
     if (setter_)
     {
-        peLib.Out() <<  std::endl << "$Sb";
+        peLib.Out() << std::endl << "$Sb";
         setter_->ObjOut(peLib, -1);
-        peLib.Out() <<  std::endl << "$Se";
+        peLib.Out() << std::endl << "$Se";
     }
-    peLib.Out() <<  std::endl << "$Pe";
+    peLib.Out() << std::endl << "$Pe";
 }
-Property *Property::ObjIn(PELib &peLib)
+Property* Property::ObjIn(PELib& peLib)
 {
-    std::string name =  peLib.UnformatName();
+    std::string name = peLib.UnformatName();
     int instance = peLib.ObjInt();
     char ch;
     ch = peLib.ObjChar();
@@ -191,13 +177,13 @@ Property *Property::ObjIn(PELib &peLib)
     ch = peLib.ObjChar();
     if (ch != ',')
         peLib.ObjError(oe_syntax);
-    Property *rv = peLib.AllocateProperty();
-    Type *type = Type::ObjIn(peLib);
+    Property* rv = peLib.AllocateProperty();
+    Type* type = Type::ObjIn(peLib);
     if (peLib.ObjBegin() != 'm')
         peLib.ObjError(oe_syntax);
-    Method *getter = nullptr;
+    Method* getter = nullptr;
     Method::ObjIn(peLib, false, &getter);
-    Method *setter = nullptr;
+    Method* setter = nullptr;
     if (peLib.ObjBegin() == 'S')
     {
         if (peLib.ObjBegin() != 'm')
@@ -220,19 +206,23 @@ Property *Property::ObjIn(PELib &peLib)
     rv->Setter(setter);
     return rv;
 }
-bool Property::PEDump(PELib &peLib)
+bool Property::PEDump(PELib& peLib)
 {
     size_t propertyIndex = peLib.PEOut().NextTableIndex(tProperty);
     size_t nameIndex = peLib.PEOut().HashString(name_);
     size_t sz;
-    Byte *sig = SignatureGenerator::PropertySig(this, sz);
+    Byte* sig = SignatureGenerator::PropertySig(this, sz);
     size_t propertySignature = peLib.PEOut().HashBlob(sig, sz);
     delete[] sig;
-    TableEntryBase *table = new PropertyTableEntry(flags_, nameIndex, propertySignature);
+    TableEntryBase* table = new PropertyTableEntry(flags_, nameIndex, propertySignature);
     peLib.PEOut().AddTableEntry(table);
 
     Semantics semantics = Semantics(Semantics::Property, propertyIndex);
-    table = new MethodSemanticsTableEntry(MethodSemanticsTableEntry::Getter, getter_->Signature()->PEIndex(), semantics );
+    // FIXME : Coverity complains that the following 'new' statements leak memory, however, I think
+    // the design is that the related constructors have side effects and the whole point of the new is to invoke those
+    // however, this is an awkard design that is hard to maintain and should probably be reworked.
+
+    table = new MethodSemanticsTableEntry(MethodSemanticsTableEntry::Getter, getter_->Signature()->PEIndex(), semantics);
 
     if (setter_)
     {
@@ -240,18 +230,19 @@ bool Property::PEDump(PELib &peLib)
     }
     return true;
 }
-void Property::Load(PELib &lib, AssemblyDef &assembly, PEReader &reader, size_t propIndex, size_t startIndex, size_t startSemantics, size_t endSemantics, std::vector<Method *>& methods)
+void Property::Load(PELib& lib, AssemblyDef& assembly, PEReader& reader, size_t propIndex, size_t startIndex, size_t startSemantics,
+                    size_t endSemantics, std::vector<Method*>& methods)
 {
-    PropertyTableEntry *entry = static_cast<PropertyTableEntry *>(reader.Table(tProperty)[propIndex-1]);
+    PropertyTableEntry* entry = static_cast<PropertyTableEntry*>(reader.Table(tProperty)[propIndex - 1]);
     Byte buf[256];
     reader.ReadFromString(buf, sizeof(buf), entry->name_.index_);
-    name_ = (char *)buf;
+    name_ = (char*)buf;
     SignatureGenerator::TypeFromPropertyRef(lib, assembly, reader, this, entry->propertyType_.index_);
 
-    const DNLTable & table = reader.Table(tMethodSemantics);
+    const DNLTable& table = reader.Table(tMethodSemantics);
     for (int i = startSemantics; i < endSemantics && i < table.size(); i++)
     {
-        MethodSemanticsTableEntry *entry2 = static_cast<MethodSemanticsTableEntry *>(table[i]);
+        MethodSemanticsTableEntry* entry2 = static_cast<MethodSemanticsTableEntry*>(table[i]);
         if (entry2->association_.index_ == propIndex)
         {
             if (entry2->semantics_ & MethodSemanticsTableEntry::Getter)
@@ -266,4 +257,4 @@ void Property::Load(PELib &lib, AssemblyDef &assembly, PEReader &reader, size_t 
         }
     }
 }
-}
+}  // namespace DotNetPELib

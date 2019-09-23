@@ -1,42 +1,27 @@
-/*
-Software License Agreement (BSD License)
+/* Software License Agreement
+ * 
+ *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ * 
+ *     This file is part of the Orange C Compiler package.
+ * 
+ *     The Orange C Compiler package is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     The Orange C Compiler package is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with Orange C.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ *     contact information:
+ *         email: TouchStone222@runbox.com <David Lindauer>
+ * 
+ */
 
-Copyright (c) 1997-2016, David Lindauer, (LADSoft).
-All rights reserved.
-
-Redistribution and use of this software in source and binary forms,
-with or without modification, are permitted provided that the following
-conditions are met:
-
-* Redistributions of source code must retain the above
-copyright notice, this list of conditions and the
-following disclaimer.
-
-* Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the
-following disclaimer in the documentation and/or other
-materials provided with the distribution.
-
-* Neither the name of LADSoft nor the names of its
-contributors may be used to endorse or promote products
-derived from this software without specific prior
-written permission of LADSoft.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
-OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-contact information:
-email: TouchStone222@runbox.com <David Lindauer>
-*/
 #include "NetLinkMain.h"
 
 #include "DotNetPELib.h"
@@ -55,7 +40,7 @@ CmdSwitchBool NetLinkMain::CManaged(SwitchParser, 'M');
 CmdSwitchBool NetLinkMain::NoDefaultlibs(SwitchParser, 'n');
 CmdSwitchBool NetLinkMain::WeedPInvokes(SwitchParser, 'P');
 
-char *NetLinkMain::usageText = "[options] inputfiles\n"
+const char *NetLinkMain::usageText = "[options] inputfiles\n"
         "\n"
         "/L         generate library          /S         generate .IL file\n"
         "/g         WIN32 GUI application     /kxxx      set strong name key\n"
@@ -68,7 +53,18 @@ char *NetLinkMain::usageText = "[options] inputfiles\n"
 int main(int argc, char **argv)
 {
     NetLinkMain linker;
-    return linker.Run(argc, argv);
+    try
+    {
+        return linker.Run(argc, argv);
+    }
+    catch (std::ios_base::failure)
+    {
+        return 1;
+    }
+    catch (DotNetPELib::PELibError)
+    {
+        return 1;
+    }
 }
 const std::string &NetLinkMain::GetAssemblyName(CmdFiles &files)
 {
@@ -79,7 +75,7 @@ const std::string &NetLinkMain::GetAssemblyName(CmdFiles &files)
     else if (files.GetSize())
     {
         CmdFiles::FileNameIterator it = files.FileNameBegin();
-        assemblyName = (*it)->c_str();
+        assemblyName = (*it).c_str();
     }
     else
     {
@@ -88,6 +84,7 @@ const std::string &NetLinkMain::GetAssemblyName(CmdFiles &files)
     }
     int n = assemblyName.find_last_of(CmdFiles::DIR_SEP[0]);
     if (n != std::string::npos)
+    {
         if (n == assemblyName.size() - 1)
         {
             std::cout << "Invalid assembly name" << std::endl;
@@ -97,6 +94,7 @@ const std::string &NetLinkMain::GetAssemblyName(CmdFiles &files)
         {
             assemblyName = assemblyName.substr(n + 1);
         }
+    }
     return assemblyName;
 }
 const std::string &NetLinkMain::GetOutputFile(CmdFiles &files)
@@ -108,7 +106,7 @@ const std::string &NetLinkMain::GetOutputFile(CmdFiles &files)
     else if (files.GetSize())
     {
         CmdFiles::FileNameIterator it = files.FileNameBegin();
-        outputFile = (*it)->c_str();
+        outputFile = (*it).c_str();
     }
     else
     {
@@ -123,7 +121,7 @@ bool NetLinkMain::LoadImage(CmdFiles &files)
     bool rv = true;
     for (CmdFiles::FileNameIterator it = files.FileNameBegin(); it != files.FileNameEnd(); ++it)
     {
-        std::string fileName = **it;
+        std::string fileName = *it;
         int n = fileName.find_last_of('.');
         if (n == std::string::npos)
         {
@@ -243,7 +241,7 @@ public:
                         if (typeid(*v) == typeid(MethodName))
                         {
                             MethodSignature *ms = static_cast<MethodName *>(v)->Signature();
-                            if (!ms->Flags() && MethodSignature::Managed) // pinvoke
+                            if (!(ms->Flags() & MethodSignature::Managed)) // pinvoke
                             {
                                 pinvokeCounters[ms->Name()] ++;
                                 for (auto m : method->GetContainer()->Methods())
@@ -322,7 +320,7 @@ bool NetLinkMain::Validate()
         peLib->Traverse(optimizer);
     return !validator.Failed() && !optimizer.Failed();
 }
-MethodSignature *NetLinkMain::LookupSignature(char * name)
+MethodSignature *NetLinkMain::LookupSignature(const char * name)
 {
     Method *result;
     PELib::eFindType rv = peLib->Find(const_cast<char *>((namespaceAndClass + name).c_str()), &result, std::vector<Type *> { }, nullptr, false);
@@ -338,7 +336,7 @@ MethodSignature *NetLinkMain::LookupSignature(char * name)
     return NULL;
 
 }
-MethodSignature *NetLinkMain::LookupManagedSignature(char *name)
+MethodSignature *NetLinkMain::LookupManagedSignature(const char *name)
 {
     Method *rv = nullptr;
     peLib->Find(std::string("lsmsilcrtl.rtl::") + name, &rv, std::vector<Type *> {}, nullptr, false);
@@ -346,7 +344,7 @@ MethodSignature *NetLinkMain::LookupManagedSignature(char *name)
         return rv->Signature();
     return nullptr;
 }
-Field *NetLinkMain::LookupField(char *name)
+Field *NetLinkMain::LookupField(const char *name)
 {
     void *result;
     PELib::eFindType rv = peLib->Find(const_cast<char *>((namespaceAndClass + name).c_str()), &result);
@@ -356,10 +354,10 @@ Field *NetLinkMain::LookupField(char *name)
     }
     return NULL;
 }
-Field *NetLinkMain::LookupManagedField(char *name)
+Field *NetLinkMain::LookupManagedField(const char *name)
 {
     void *rv = nullptr;
-    if (peLib->Find(std::string("lsmsilcrtl.rtl::") + name, &rv, false) == PELib::s_field)
+    if (peLib->Find(std::string("lsmsilcrtl.rtl::") + name, &rv, nullptr) == PELib::s_field)
     {
         return static_cast<Field *>(rv);
     }
@@ -533,7 +531,7 @@ void NetLinkMain::dumpCallToMain(void)
         dumpInitializerCalls(destructors);
         dumpInitializerCalls(rundowns);
 
-        if (!mainSym || mainSym && mainSym->ReturnType()->IsVoid())
+        if (!mainSym || (mainSym && mainSym->ReturnType()->IsVoid()))
             currentMethod->AddInstruction(peLib->AllocateInstruction(Instruction::i_ldc_i4, peLib->AllocateOperand((longlong)0, Operand::i32)));
         if (CManaged.GetValue())
         {
