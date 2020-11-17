@@ -1,6 +1,6 @@
 /* Software License Agreement
  *
- *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
  *
  *     This file is part of the Orange C Compiler package.
  *
@@ -52,7 +52,7 @@ DotNetMetaHeader* PEWriter::metaHeader_ = &metaHeader1;
 DWord PEWriter::cildata_rva_;
 Byte PEWriter::defaultUS_[8] = {0, 3, 0x20, 0, 0};
 
-size_t PEMethod::Write(size_t sizes[MaxTables + ExtraIndexes], std::fstream& out) const
+size_t PEMethod::Write(size_t sizes[MaxTables + ExtraIndexes], std::iostream& out) const
 {
     Byte dest[512];
     int n;
@@ -472,7 +472,7 @@ void PEWriter::CalculateObjects(PELib& peLib)
         }
         else
         {
-            method->rva_ = lastRVA;
+            method->rva_ = 0;
         }
     }
     if (currentRVA % 4)
@@ -685,7 +685,7 @@ void PEWriter::HashPartOfFile(SHA1Context& context, size_t offset, size_t len)
         sz += l;
     }
 }
-bool PEWriter::WriteFile(PELib& peLib, std::fstream& out)
+bool PEWriter::WriteFile(PELib& peLib, std::iostream& out)
 {
     outputFile_ = &out;
     if (!entryPoint_ && !DLL_)
@@ -1048,8 +1048,8 @@ bool PEWriter::WriteVersionInfo(PELib& peLib) const
     align(4);
     put(L"Translation", sizeof(L"Language"));
     align(4);
-    DWord n = language_ << 16;
-    put(&n, sizeof(n));
+    size_t n = language_ << 16;
+    put(&n, sizeof(DWord));
 
     std::string nn = peLib.FileName();
     n = nn.find_last_of("\\");

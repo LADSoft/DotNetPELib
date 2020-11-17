@@ -1,6 +1,6 @@
 /* Software License Agreement
  *
- *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
  *
  *     This file is part of the Orange C Compiler package.
  *
@@ -68,7 +68,8 @@ bool Field::ILSrcDumpTypeName(PELib& peLib, Field::ValueSize size)
 bool Field::ILSrcDump(PELib& peLib) const
 {
     peLib.Out() << ".field";
-    if ((parent_->Flags().Flags() & Qualifiers::Explicit) || ((parent_->Flags().Flags() & Qualifiers::Sequential) && explicitOffset_))
+    if ((parent_->Flags().Flags() & Qualifiers::Explicit) ||
+        ((parent_->Flags().Flags() & Qualifiers::Sequential) && explicitOffset_))
         peLib.Out() << " [" << explicitOffset_ << "]";
     flags_.ILSrcDumpBeforeFlags(peLib);
     flags_.ILSrcDumpAfterFlags(peLib);
@@ -363,7 +364,7 @@ bool Field::PEDump(PELib& peLib)
                     peLib.PEOut().AddTableEntry(table);
                 }
             }
-                break;
+            break;
             case Bytes:
                 if (byteValue_ && byteLength_)
                 {

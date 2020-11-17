@@ -1,6 +1,6 @@
 /* Software License Agreement
  * 
- *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
  * 
  *     This file is part of the Orange C Compiler package.
  * 
@@ -10,8 +10,7 @@
  *     (at your option) any later version.
  * 
  *     The Orange C Compiler package is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of 
-
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
  * 
@@ -262,7 +261,7 @@ namespace DotNetPELib {
     public:
         static Byte *MethodDefSig(MethodSignature *signature, size_t &sz);
         static Byte *MethodRefSig(MethodSignature *signature, size_t &sz);
-        //Byte *MethodSpecSig(Method *method);
+        static Byte *MethodSpecSig(MethodSignature *signature, size_t &sz);
         static Byte *PropertySig(Property *property, size_t &sz);
         static Byte *FieldSig(Field *field, size_t &sz);
         //Byte *PropertySig(Property *property);
@@ -365,7 +364,7 @@ namespace DotNetPELib {
         static void CreateGuid(Byte *Guid);
 
         size_t NextTableIndex(int table) const { return tables_[table].size() + 1; }
-        bool WriteFile(PELib &peLib, std::fstream &out);
+        bool WriteFile(PELib &peLib, std::iostream &out);
         void HashPartOfFile(SHA1Context &context, size_t offset, size_t len);
 
         // another thing that makes this lib not thread safe, the RVA for 
@@ -406,7 +405,7 @@ namespace DotNetPELib {
         void seek(size_t offset) const { outputFile_->seekp(offset); }
         void align(size_t offset) const;
     private:
-        std::fstream *outputFile_;
+        std::iostream *outputFile_;
         std::string snkFile_;
         // a reflection of the String stream so that we can keep from doing duplicates.
         // right now we don't check duplicates on any of the other streams...
@@ -1599,7 +1598,7 @@ namespace DotNetPELib {
         size_t signatureToken_;
         size_t rva_;
         size_t methodDef_;
-        size_t Write(size_t sizes[MaxTables + ExtraIndexes], std::fstream &out) const;
+        size_t Write(size_t sizes[MaxTables + ExtraIndexes], std::iostream &out) const;
     };
     inline char* StrCpy(char *data, size_t len, const char* source)
     {
@@ -1614,8 +1613,9 @@ namespace DotNetPELib {
     }
     inline char* StrCat(char *data, size_t len, const char* source)
     {
-        strncat(data, source, len);
-        data[len - 1] = '\0';
+        int num = (int)len - (int)strlen(data) - 1;
+        if (num > 0)
+            strncat(data, source, num);
         return data;
     }
     template<size_t len>

@@ -1,6 +1,6 @@
 /* Software License Agreement
  *
- *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
  *
  *     This file is part of the Orange C Compiler package.
  *
@@ -58,7 +58,7 @@ AssemblyDef* PELib::EmptyWorkingAssembly(const std::string& AssemblyName)
 bool PELib::DumpOutputFile(const std::string& file, OutputMode mode, bool gui)
 {
     bool rv;
-    outputStream_ = new std::fstream(file.c_str(), std::ios::in | std::ios::out | std::ios::trunc |
+    outputStream_ = std::make_unique<std::fstream>(file.c_str(), std::ios::in | std::ios::out | std::ios::trunc |
                                                        (mode == ilasm || mode == object ? std::ios::in : std::ios::binary));
     switch (mode)
     {
@@ -78,7 +78,7 @@ bool PELib::DumpOutputFile(const std::string& file, OutputMode mode, bool gui)
             rv = false;
             break;
     }
-    delete outputStream_;
+    static_cast<std::fstream&>(*outputStream_).close();
     return rv;
 }
 void PELib::AddExternalAssembly(const std::string& assemblyName, Byte* publicKeyToken)
@@ -165,12 +165,21 @@ void PELib::SplitPath(std::vector<std::string>& split, std::string path)
     {
         split.push_back(last);
     }
+    if (split.size() > 2)
+    {
+        if (split[split.size() - 1] == "ctor" || split[split.size() - 1] == "cctor")
+            if (split[split.size() - 2] == "")
+            {
+                split[split.size() - 2] = "." + split[split.size() - 1];
+                split.resize(split.size() - 1);
+            }
+    }
 }
-PELib::eFindType PELib::Find(std::string path, void** result, AssemblyDef* assembly)
+PELib::eFindType PELib::Find(std::string path, void **result, std::deque<Type*>* generics, AssemblyDef *assembly)
 {
     if (path.size() && path[0] == '[')
     {
-        int npos = path.find(']');
+        size_t npos = path.find(']');
         if (npos != std::string::npos)
         {
             std::string assemblyName = path.substr(1, npos - 1);
@@ -192,7 +201,7 @@ PELib::eFindType PELib::Find(std::string path, void** result, AssemblyDef* assem
             if (!assembly || assembly == a)
             {
                 size_t n = 0;
-                DataContainer* dc = a->FindContainer(split, n);
+                DataContainer* dc = a->FindContainer(split, n, generics);
                 if (dc)
                 {
                     if (n == split.size())
@@ -229,7 +238,7 @@ PELib::eFindType PELib::Find(std::string path, void** result, AssemblyDef* assem
     for (auto u : usingList_)
     {
         size_t n = 0;
-        DataContainer* dc = u->FindContainer(split, n);
+        DataContainer* dc = u->FindContainer(split, n, generics);
         if (dc)
         {
             if (n == split.size())
@@ -264,7 +273,9 @@ PELib::eFindType PELib::Find(std::string path, void** result, AssemblyDef* assem
     if (!n)
         return s_notFound;
     else if (n > 1)
+    {
         return s_ambiguous;
+    }
     else if (found.size())
     {
         *result = found[0];
@@ -292,11 +303,39 @@ PELib::eFindType PELib::Find(std::string path, void** result, AssemblyDef* assem
     }
     return s_notFound;
 }
-PELib::eFindType PELib::Find(std::string path, Method** result, std::vector<Type*> args, AssemblyDef* assembly, bool matchArgs)
+Class* PELib::FindOrCreateGeneric(std::string name, std::deque<Type*>& generics)
+{
+    void *result = nullptr;
+    if (Find(name, &result, &generics) == s_class)
+    {
+        return static_cast<Class *>(result);
+    }
+    if (Find(name, &result) == s_class)
+    {
+        Class* rv = AllocateClass(static_cast<Class*>(result));
+        rv->Generic() = generics;
+        rv->GenericParent(static_cast<Class*>(result));
+        static_cast<Class *>(result)->Parent()->Add(rv);
+        rv->Clear();
+        for (auto m : static_cast<Class*>(result)->Methods())
+        {
+            // only doing methods right now...
+            Method *old = static_cast<Method*>(m);
+            MethodSignature *m1 = AllocateMethodSignature(old->Signature());
+            m1->SetContainer(rv);
+            Method* nm = AllocateMethod(m1, old->Flags());
+            rv->Add(nm);
+        }
+        return rv;
+    }
+    return nullptr;
+}
+
+PELib::eFindType PELib::Find(std::string path, Method **result, std::vector<Type *> args, Type* rv, std::deque<Type*>* generics, AssemblyDef *assembly, bool matchArgs)
 {
     if (path.size() && path[0] == '[')
     {
-        int npos = path.find(']');
+        size_t npos = path.find(']');
         if (npos != std::string::npos)
         {
             std::string assemblyName = path.substr(1, npos - 1);
@@ -315,7 +354,7 @@ PELib::eFindType PELib::Find(std::string path, Method** result, std::vector<Type
             if (!assembly || assembly == a)
             {
                 size_t n = 0;
-                DataContainer* dc = a->FindContainer(split, n);
+                DataContainer* dc = a->FindContainer(split, n, generics, true);
                 if (dc)
                 {
                     if (n == split.size() - 1 &&
@@ -335,7 +374,7 @@ PELib::eFindType PELib::Find(std::string path, Method** result, std::vector<Type
     for (auto u : usingList_)
     {
         size_t n = 0;
-        DataContainer* dc = u->FindContainer(split, n);
+        DataContainer* dc = u->FindContainer(split, n, generics);
         if (dc)
         {
             if ((n == split.size() - 1 && typeid(*dc) == typeid(Class)) || typeid(*dc) == typeid(Enum))
@@ -353,7 +392,7 @@ PELib::eFindType PELib::Find(std::string path, Method** result, std::vector<Type
     {
         for (auto it = foundMethod.begin(); it != foundMethod.end();)
         {
-            if (!(*it)->Signature()->Matches(args))
+            if (!(*it)->Signature()->Matches(args) || (rv && !(*it)->Signature()->MatchesType((*it)->Signature()->ReturnType(), rv)))
                 it = foundMethod.erase(it);
             else
                 ++it;
@@ -566,6 +605,7 @@ char PELib::ObjBegin(bool next)
     char ch = ObjChar();
     if (ch == '$')
     {
+
         if (objInputBuf_[objInputPos_ + 1] == 'b')
         {
 
@@ -627,7 +667,7 @@ std::string PELib::FormatName(const std::string& name)
 {
     char buf[256];
     sprintf(buf, "%04X", (unsigned)name.size());
-    return std::string(buf) + name.c_str();
+    return std::string(buf) + name;
 }
 AssemblyDef* PELib::FindAssembly(const std::string& assemblyName) const
 {
@@ -654,13 +694,14 @@ Class* PELib::LookupClass(PEReader& reader, const std::string& assemblyName, int
     }
     return assembly->LookupClass(*this, nameSpace, name);
 }
+
 bool PELib::DumpPEFile(std::string file, bool isexe, bool isgui)
 {
     int n = 1;
     WorkingAssembly()->Number(n);  // give initial PE Indexes for field resolution..
 
     peWriter_ = new PEWriter(isexe, isgui, WorkingAssembly()->SNKFile());
-    size_t moduleIndex = peWriter_->HashString("<Module>");
+    size_t moduleIndex = peWriter_->HashString("Module");
     TypeDefOrRef typeDef(TypeDefOrRef::TypeDef, 0);
     TableEntryBase* table = new TypeDefTableEntry(0, moduleIndex, 0, typeDef, 1, 1);
     peWriter_->AddTableEntry(table);
@@ -784,7 +825,7 @@ int PELib::LoadUnmanaged(const std::string& name)
     if (reader.Read())
     {
         std::string unmanagedDllName = reader.Name();
-        unsigned npos = unmanagedDllName.find_last_of(DIR_SEP);
+        size_t npos = unmanagedDllName.find_last_of(DIR_SEP);
         if (npos != std::string::npos && npos != unmanagedDllName.size() - 1)
         {
             unmanagedDllName = unmanagedDllName.substr(npos + 1);

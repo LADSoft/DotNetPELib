@@ -1,6 +1,6 @@
 /* Software License Agreement
  *
- *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
  *
  *     This file is part of the Orange C Compiler package.
  *
@@ -219,6 +219,8 @@ size_t MethodName::Render(PELib& peLib, int opcode, int operandType, Byte* resul
             signature_->PEDump(peLib, false);
         if (signature_->PEIndex())
             *(DWord*)result = signature_->PEIndex() | (tMethodDef << 24);
+        else if (signature_->Generic().size())
+            *(DWord*)result = signature_->PEIndexCallSite() | (tMethodSpec << 24);
         else
             *(DWord*)result = signature_->PEIndexCallSite() | (tMemberRef << 24);
     }

@@ -1,6 +1,6 @@
 /* Software License Agreement
  * 
- *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
  * 
  *     This file is part of the Orange C Compiler package.
  * 
@@ -77,6 +77,7 @@ private:
     DotNetPELib::DataContainer *mainContainer;
     std::list<DotNetPELib::MethodSignature *> initializers, startups;
     std::list<DotNetPELib::MethodSignature *> destructors, rundowns;
+    std::list<DotNetPELib::MethodSignature *> stringinitializers;
 
     std::string namespaceAndClass;
     bool hasEntryPoint;

@@ -1,6 +1,6 @@
 /* Software License Agreement
  *
- *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
  *
  *     This file is part of the Orange C Compiler package.
  *
@@ -120,6 +120,11 @@ Namespace* AssemblyDef::InsertNameSpaces(PELib& lib, std::map<std::string, Names
 }
 Namespace* AssemblyDef::InsertNameSpaces(PELib& lib, Namespace* nameSpace, std::string name)
 {
+    auto it = namespaceCache.find(name);
+    if (it != namespaceCache.end())
+    {
+        return it->second;
+    }
     std::string in = name;
     size_t n = name.find_last_of(".");
     if (n != std::string::npos)
@@ -156,6 +161,7 @@ Namespace* AssemblyDef::InsertNameSpaces(PELib& lib, Namespace* nameSpace, std::
             Add(rv);
         }
         nameSpace = rv;
+        namespaceCache[in] = nameSpace;
     }
     return nameSpace;
 }
@@ -192,8 +198,17 @@ Class* AssemblyDef::InsertClasses(PELib& lib, Namespace* nameSpace, Class* cls, 
 }
 Class* AssemblyDef::LookupClass(PELib& lib, const std::string& nameSpaceName, const std::string& name)
 {
+    auto in = nameSpaceName + "::" + name;
+    auto it = classCache.find(in);
+    if (it != classCache.end())
+    {
+        return it->second;
+    }
+
     Namespace* nameSpace = InsertNameSpaces(lib, nullptr, nameSpaceName);
-    return InsertClasses(lib, nameSpace, nullptr, name);
+    auto rv = InsertClasses(lib, nameSpace, nullptr, name);
+    classCache[in] = rv;
+    return rv;
 }
 void AssemblyDef::SetPublicKey(PEReader& reader, size_t index)
 {
@@ -324,7 +339,6 @@ void AssemblyDef::Load(PELib& lib, PEReader& reader)
         fields.push_back(0);
         methods.push_back(0);
         properties.push_back(0);
-        semantics.push_back(0);
         const DNLTable& table2 = reader.Table(tTypeDef);
         for (auto tentry : table2)
         {
@@ -498,9 +512,12 @@ void AssemblyDef::Load(PELib& lib, PEReader& reader)
                             }
                             break;
                             case TypeDefOrRef::TypeRef:
-                                if (refClasses[entry->extends_.index_] == "System.ValueType")
-                                    classes[i]->Flags() |= Qualifiers::Value;
-                                classes[i]->ExtendsName(refClasses[entry->extends_.index_]);
+                                if (entry->extends_.index_ < refClasses.size())
+                                {
+                                    if (refClasses[entry->extends_.index_] == "System.ValueType")
+                                        classes[i]->Flags() |= Qualifiers::Value;
+                                    classes[i]->ExtendsName(refClasses[entry->extends_.index_]);
+                                }
                                 break;
                         }
                     };
@@ -576,7 +593,7 @@ void AssemblyDef::Load(PELib& lib, PEReader& reader)
                 */
             }
         }
-        semantics[classes.size() - 1] = properties.size();
+        //        semantics[classes.size() - 1] = properties.size();
         // load the namespaces.
         // Note: classes fields and functions not in a namespace will NOT
         // be imported, as per the C# rules.

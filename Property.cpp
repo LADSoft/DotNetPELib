@@ -1,6 +1,6 @@
 /* Software License Agreement
  *
- *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
  *
  *     This file is part of the Orange C Compiler package.
  *
@@ -223,10 +223,11 @@ bool Property::PEDump(PELib& peLib)
     // however, this is an awkard design that is hard to maintain and should probably be reworked.
 
     table = new MethodSemanticsTableEntry(MethodSemanticsTableEntry::Getter, getter_->Signature()->PEIndex(), semantics);
-
+    peLib.PEOut().AddTableEntry(table);
     if (setter_)
     {
         table = new MethodSemanticsTableEntry(MethodSemanticsTableEntry::Setter, setter_->Signature()->PEIndex(), semantics);
+        peLib.PEOut().AddTableEntry(table);
     }
     return true;
 }

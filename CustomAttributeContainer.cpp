@@ -1,6 +1,6 @@
 /* Software License Agreement
  *
- *     Copyright(C) 1994-2019 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
  *
  *     This file is part of the Orange C Compiler package.
  *
@@ -59,7 +59,7 @@ bool CustomAttributeContainer::CustomAttributeDescriptor::operator()(const Custo
         {
             if (left->sz < right->sz)
                 return true;
-            else 
+            else
             {
                 if (left->sz == right->sz)
                     return memcmp(left->data, right->data, right->sz) < 0;
