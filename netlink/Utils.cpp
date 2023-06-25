@@ -49,7 +49,7 @@ extern "C" char* getcwd(char*, int);
 #include "CmdFiles.h"
 
 #include <sstream>
-#include "../version.h"
+#include "version.h"
 #include <iostream>
 
 void (*Utils::cleanup)();
