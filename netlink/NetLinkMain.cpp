@@ -1,25 +1,25 @@
 /* Software License Agreement
- *
- *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
- *
+ * 
+ *     Copyright(C) 1994-2023 David Lindauer, (LADSoft)
+ * 
  *     This file is part of the Orange C Compiler package.
- *
+ * 
  *     The Orange C Compiler package is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- *
+ * 
  *     The Orange C Compiler package is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- *
+ * 
  *     You should have received a copy of the GNU General Public License
  *     along with Orange C.  If not, see <http://www.gnu.org/licenses/>.
- *
+ * 
  *     contact information:
  *         email: TouchStone222@runbox.com <David Lindauer>
- *
+ * 
  */
 
 #include "NetLinkMain.h"
@@ -29,6 +29,7 @@
 using namespace DotNetPELib;
 
 CmdSwitchParser NetLinkMain::SwitchParser;
+CmdSwitchBool NetLinkMain::ShowHelp(SwitchParser, '?', false, {"help"});
 CmdSwitchString NetLinkMain::StrongName(SwitchParser, 'k');
 CmdSwitchBool NetLinkMain::LibraryFile(SwitchParser, 'L');
 CmdSwitchBool NetLinkMain::AssemblyFile(SwitchParser, 'S');
@@ -40,7 +41,7 @@ CmdSwitchBool NetLinkMain::CManaged(SwitchParser, 'M');
 CmdSwitchBool NetLinkMain::NoDefaultlibs(SwitchParser, 'n');
 CmdSwitchBool NetLinkMain::WeedPInvokes(SwitchParser, 'P');
 
-const char* NetLinkMain::usageText =
+const char* NetLinkMain::helpText =
     "[options] inputfiles\n"
     "\n"
     "/L         generate library          /S         generate .IL file\n"
@@ -49,7 +50,9 @@ const char* NetLinkMain::usageText =
     "/vx.x.x.x  set assembly version      /M         managed mode\n"
     "/P         replace pinvokes\n"
     "@xxx       Read commands from file\n"
+    "/?, --help This text\n"
     "\nTime: " __TIME__ "  Date: " __DATE__;
+const char* NetLinkMain::usageText = "[options] inputfiles";
 
 int main(int argc, char** argv)
 {
@@ -114,8 +117,9 @@ const std::string& NetLinkMain::GetOutputFile(CmdFiles& files)
         std::cout << "Nothing to do." << std::endl;
         exit(1);
     }
-    outputFile =
-        Utils::QualifiedFile(outputFile.c_str(), AssemblyFile.GetValue() ? ".il" : LibraryFile.GetValue() ? ".dll" : ".exe");
+    outputFile = Utils::QualifiedFile(outputFile.c_str(), AssemblyFile.GetValue()  ? ".il"
+                                                          : LibraryFile.GetValue() ? ".dll"
+                                                                                   : ".exe");
     return outputFile;
 }
 bool NetLinkMain::LoadImage(CmdFiles& files)
@@ -295,7 +299,7 @@ class PInvokeWeeder : public Callback
   private:
     PELib& peLib;
     bool scanning;
-    std::map<std::string, int> pinvokeCounters;
+    std::unordered_map<std::string, int, StringHash> pinvokeCounters;
 };
 bool NetLinkMain::Validate()
 {
@@ -316,8 +320,8 @@ bool NetLinkMain::Validate()
 MethodSignature* NetLinkMain::LookupSignature(const char* name)
 {
     Method* result;
-    PELib::eFindType rv =
-        peLib->Find(const_cast<char*>((namespaceAndClass + name).c_str()), &result, std::vector<Type*>{}, nullptr, nullptr, nullptr, false);
+    PELib::eFindType rv = peLib->Find(const_cast<char*>((namespaceAndClass + name).c_str()), &result, std::vector<Type*>{}, nullptr,
+                                      nullptr, nullptr, false);
     if (rv == PELib::s_method)
     {
         return result->Signature();
@@ -677,7 +681,9 @@ bool NetLinkMain::AddRTLThunks()
 bool NetLinkMain::CreateExecutable(CmdFiles& files)
 {
     return peLib->DumpOutputFile(GetOutputFile(files).c_str(),
-                                 AssemblyFile.GetValue() ? PELib::ilasm : LibraryFile.GetValue() ? PELib::pedll : PELib::peexe,
+                                 AssemblyFile.GetValue()  ? PELib::ilasm
+                                 : LibraryFile.GetValue() ? PELib::pedll
+                                                          : PELib::peexe,
                                  GUIApp.GetValue());
 }
 int NetLinkMain::Run(int argc, char** argv)
@@ -693,10 +699,12 @@ int NetLinkMain::Run(int argc, char** argv)
         if (!internalConfig.Parse(configName.c_str()))
             Utils::fatal("Corrupt configuration file");
     }
-    if (!SwitchParser.Parse(&argc, argv) || (argc == 1 && File.GetCount() <= 1))
+    if (!SwitchParser.Parse(&argc, argv) || (argc == 1 && File.GetCount() <= 1 && !ShowHelp.GetExists()))
     {
         Utils::usage(argv[0], usageText);
     }
+    if (ShowHelp.GetExists())
+        Utils::usage(argv[0], helpText);
     CmdFiles files(argv + 1);
     if (File.GetValue())
         files.Add(File.GetValue() + 1);
@@ -733,8 +741,8 @@ int NetLinkMain::Run(int argc, char** argv)
     }
     if (!Validate())
     {
-//        delete peLib;
-//        return 1;
+        //        delete peLib;
+        //        return 1;
     }
     if (!CreateExecutable(files))
     {

@@ -1,6 +1,6 @@
 /* Software License Agreement
  * 
- *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2023 David Lindauer, (LADSoft)
  * 
  *     This file is part of the Orange C Compiler package.
  * 
@@ -83,6 +83,7 @@ private:
     bool hasEntryPoint;
 
     static CmdSwitchParser SwitchParser;
+    static CmdSwitchBool ShowHelp;
     static CmdSwitchString StrongName;
     static CmdSwitchBool LibraryFile;
     static CmdSwitchBool AssemblyFile;
@@ -96,5 +97,6 @@ private:
     static CmdSwitchBool WeedPInvokes;
 
     static const char *usageText;
+    static const char* helpText;
 };
 #endif
