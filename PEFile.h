@@ -1,6 +1,6 @@
 /* Software License Agreement
  * 
- *     Copyright(C) 1994-2020 David Lindauer, (LADSoft)
+ *     Copyright(C) 1994-2023 David Lindauer, (LADSoft)
  * 
  *     This file is part of the Orange C Compiler package.
  * 
@@ -400,7 +400,7 @@ namespace DotNetPELib {
         void VersionString(const wchar_t *name, const char *value) const;
 
         // Various helpers to put data to the output
-        void put(const void *data, size_t size) const { outputFile_->write((char *)data, size); }
+        void put(const void *data, size_t size) const { outputFile_->write((char*)data, size); }
         std::streamoff offset() const { return outputFile_->tellp(); }
         void seek(size_t offset) const { outputFile_->seekp(offset); }
         void align(size_t offset) const;
