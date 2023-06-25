@@ -1,207 +1,268 @@
-/*
-    Software License Agreement (BSD License)
-    
-    Copyright (c) 1997-2016, David Lindauer, (LADSoft).
-    All rights reserved.
-    
-    Redistribution and use of this software in source and binary forms, 
-    with or without modification, are permitted provided that the following 
-    conditions are met:
-    
-    * Redistributions of source code must retain the above
-      copyright notice, this list of conditions and the
-      following disclaimer.
-    
-    * Redistributions in binary form must reproduce the above
-      copyright notice, this list of conditions and the
-      following disclaimer in the documentation and/or other
-      materials provided with the distribution.
-    
-    * Neither the name of LADSoft nor the names of its
-      contributors may be used to endorse or promote products
-      derived from this software without specific prior
-      written permission of LADSoft.
-    
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
-    THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
-    PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER 
-    OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
-    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
-    OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
-    WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
-    OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-    ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/* Software License Agreement
+ * 
+ *     Copyright(C) 1994-2023 David Lindauer, (LADSoft)
+ * 
+ *     This file is part of the Orange C Compiler package.
+ * 
+ *     The Orange C Compiler package is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     The Orange C Compiler package is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with Orange C.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ *     contact information:
+ *         email: TouchStone222@runbox.com <David Lindauer>
+ * 
+ */
 
-    contact information:
-        email: TouchStone222@runbox.com <David Lindauer>
-*/
 #ifndef CMDSWITCH_H
 #define CMDSWITCH_H
 
-// next lines are for watcom
-#undef min
-#undef max
-#include <limits.h>
+#include <climits>
 #include <string>
 #include <set>
 #include <vector>
 #include <fstream>
+#include <iostream>
+#include <memory>
+#include <deque>
 class CmdSwitchParser;
 
 class CmdSwitchBase
 {
-    public:
-        CmdSwitchBase() : switchChar(-1) { }
-        CmdSwitchBase(CmdSwitchParser &parser, char SwitchChar) ;
-        CmdSwitchBase(char SwitchChar) : switchChar(SwitchChar) { }
-        CmdSwitchBase(const CmdSwitchBase &orig) { switchChar = orig.switchChar; }
-        virtual int Parse(const char *data) { return 0; } 
-        
-        char GetSwitchChar() const { return switchChar; }
-    private:
-        char switchChar;
-} ;
+  public:
+    CmdSwitchBase() : switchChar(-1), exists(false) {}
+    CmdSwitchBase(CmdSwitchParser& parser, char SwitchChar, std::deque<std::string> LongNames);
+    CmdSwitchBase(char SwitchChar, std::deque<std::string> LongNames) : switchChar(SwitchChar), exists(false), longNames(LongNames)
+    {
+    }
+    CmdSwitchBase(const CmdSwitchBase& orig) = default;
+    virtual int Parse(const char* data) { return 0; }
+
+    char GetSwitchChar() const { return switchChar; }
+    const std::deque<std::string>& GetLongNames() const { return longNames; }
+    void SetExists(bool val = true) { exists = val; }
+    bool GetExists() const { return exists; }
+    virtual void SetArgNum(int) {}
+
+    virtual bool RequiresArgument() { return true; }
+
+  private:
+    bool exists;
+    char switchChar;
+    std::deque<std::string> longNames;
+};
 
 class CmdSwitchBool : public CmdSwitchBase
 {
-    public:
-        CmdSwitchBool(CmdSwitchParser &parser, char SwitchChar, bool State = false) : CmdSwitchBase(parser, SwitchChar), value(State) {}
-        CmdSwitchBool(const CmdSwitchBool &orig) : CmdSwitchBase(orig) { value = orig.value; }
-        virtual int Parse(const char *data);
-        bool GetValue() const { return value; }
-        void SetValue(bool flag) { value = flag; }
-    private:
-        bool value;
+  public:
+    CmdSwitchBool(CmdSwitchParser& parser, char SwitchChar, bool State = false, std::deque<std::string> LongNames = {}) :
+        CmdSwitchBase(parser, SwitchChar, LongNames), value(State)
+    {
+    }
+    CmdSwitchBool(const CmdSwitchBool& orig) = default;
+    virtual int Parse(const char* data) override;
+    bool GetValue() const { return value; }
+    void SetValue(bool flag)
+    {
+        value = flag;
+        SetExists();
+    }
+
+  private:
+    bool value;
 };
 class CmdSwitchInt : public CmdSwitchBase
 {
-    public:
-        CmdSwitchInt(CmdSwitchParser &parser, char SwitchChar, int Value = 0, int LowLimit = 0, int HiLimit = INT_MAX ) 
-            : CmdSwitchBase(parser, SwitchChar), value(Value), lowLimit(LowLimit), hiLimit(HiLimit) {}
-        CmdSwitchInt(const CmdSwitchInt &orig) : CmdSwitchBase(orig) 
-        {
-            value = orig.value;
-            lowLimit = orig.lowLimit;
-            hiLimit = orig.hiLimit;
-        }
-        
-        virtual int Parse(const char *data);
-        int GetValue() const { return value; }
-    private:
-        int value;
-        int lowLimit;
-        int hiLimit;
+  public:
+    CmdSwitchInt(CmdSwitchParser& parser, char SwitchChar, int Value = 0, int LowLimit = 0, int HiLimit = INT_MAX,
+                 std::deque<std::string> LongNames = {}) :
+        CmdSwitchBase(parser, SwitchChar, LongNames), value(Value), lowLimit(LowLimit), hiLimit(HiLimit)
+    {
+    }
+    CmdSwitchInt(const CmdSwitchInt& orig) = default;
+
+    virtual int Parse(const char* data) override;
+    int GetValue() const { return value; }
+    void SetValue(int val)
+    {
+        value = val;
+        SetExists();
+    }
+    bool RequiresArgument() override { return false; }
+
+  private:
+    int value;
+    int lowLimit;
+    int hiLimit;
 };
 class CmdSwitchHex : public CmdSwitchBase
 {
-    public:
-        CmdSwitchHex(CmdSwitchParser &parser, char SwitchChar, int Value = 0, int LowLimit = 0, int HiLimit = INT_MAX ) 
-            : CmdSwitchBase(parser, SwitchChar), value(Value), lowLimit(LowLimit), hiLimit(HiLimit) {}
-        CmdSwitchHex(const CmdSwitchHex &orig) : CmdSwitchBase(orig) 
-        {
-            value = orig.value;
-            lowLimit = orig.lowLimit;
-            hiLimit = orig.hiLimit;
-        }
-        
-        virtual int Parse(const char *data);
-        int GetValue() const { return value; }
-    private:
-        int value;
-        int lowLimit;
-        int hiLimit;
+  public:
+    CmdSwitchHex(CmdSwitchParser& parser, char SwitchChar, int Value = 0, int LowLimit = 0, int HiLimit = INT_MAX,
+                 std::deque<std::string> LongNames = {}) :
+        CmdSwitchBase(parser, SwitchChar, LongNames), value(Value), lowLimit(LowLimit), hiLimit(HiLimit)
+    {
+    }
+    CmdSwitchHex(const CmdSwitchHex& orig) = default;
+
+    virtual int Parse(const char* data) override;
+    int GetValue() const { return value; }
+
+  private:
+    int value;
+    int lowLimit;
+    int hiLimit;
 };
 class CmdSwitchString : public CmdSwitchBase
 {
-    public:
-        CmdSwitchString(CmdSwitchParser &parser, char SwitchChar, char Concat = '\0') : CmdSwitchBase(parser, SwitchChar), value(""), concat(Concat) {}
-        CmdSwitchString(const CmdSwitchString &orig) : CmdSwitchBase(orig), concat(0) { value = orig.value;}
-        CmdSwitchString() : value(""), concat(0) { }
-        virtual int Parse(const char *data);
-        const std::string &GetValue() const {return value; }
-    protected:
-        std::string value;
-    private:
-        char concat;
+  public:
+    CmdSwitchString(CmdSwitchParser& parser, char SwitchChar, char Concat = '\0', std::deque<std::string> LongNames = {}) :
+        CmdSwitchBase(parser, SwitchChar, LongNames), value(""), concat(Concat)
+    {
+    }
+    CmdSwitchString(const CmdSwitchString& orig) = default;
+    CmdSwitchString() : value(""), concat(0) {}
+    virtual int Parse(const char* data) override;
+    const std::string& GetValue() const { return value; }
+    void SetValue(std::string val)
+    {
+        value = val;
+        SetExists();
+    }
+    std::string operator+=(const char* c)
+    {
+        value += c;
+        return value;
+    }
+
+  protected:
+    std::string value;
+
+  private:
+    char concat;
+};
+class CmdSwitchCombineString : public CmdSwitchString
+{
+  public:
+    CmdSwitchCombineString(CmdSwitchParser& parser, char SwitchChar, char Concat = '\0', std::deque<std::string> LongNames = {}) :
+        CmdSwitchString(parser, SwitchChar, Concat, LongNames)
+    {
+    }
+    CmdSwitchCombineString() {}
+    virtual int Parse(const char* data) override;
 };
 class CmdSwitchCombo : public CmdSwitchString
 {
-    public:
-        CmdSwitchCombo(CmdSwitchParser &parser, char SwitchChar, char *Valid) : CmdSwitchString(parser, SwitchChar), valid(Valid), selected(false) {}
-        CmdSwitchCombo(const CmdSwitchCombo &orig) : CmdSwitchString(orig) { valid = orig.valid; selected = orig.selected; }
-        CmdSwitchCombo() : valid(""), selected(false) { }
-        virtual int Parse(const char *data);
-        bool GetValue() { return selected; }
-        bool GetValue(char selector) { return value.find_first_of(selector) != std::string::npos; }
-    private:
-        bool selected;
-        std::string valid;
-} ;
-class CmdSwitchOutput : public CmdSwitchString
+  public:
+    CmdSwitchCombo(CmdSwitchParser& parser, char SwitchChar, const char* Valid, std::deque<std::string> LongNames = {}) :
+        CmdSwitchString(parser, SwitchChar, '\0', LongNames), valid(Valid), selected(false)
+    {
+    }
+    CmdSwitchCombo(const CmdSwitchCombo& orig) = default;
+    CmdSwitchCombo() : valid(""), selected(false) {}
+    virtual int Parse(const char* data) override;
+    bool GetValue() { return selected; }
+    bool GetValue(char selector) { return value.find_first_of(selector) != std::string::npos; }
+
+  private:
+    bool selected;
+    std::string valid;
+};
+class CmdSwitchOutput : public CmdSwitchCombineString
 {
-    public:
-        CmdSwitchOutput(CmdSwitchParser &parser, char SwitchChar, const char *Extension, bool concat = false) : CmdSwitchString(parser, SwitchChar, concat), extension(Extension) {}
-        CmdSwitchOutput(const CmdSwitchOutput &orig) : CmdSwitchString(orig) { extension = orig.extension;}
-        virtual int Parse(const char *data);
-    private:
-        const char *extension;
+  public:
+    CmdSwitchOutput(CmdSwitchParser& parser, char SwitchChar, const char* Extension, bool concat = false,
+                    std::deque<std::string> LongNames = {}) :
+        CmdSwitchCombineString(parser, SwitchChar, concat, LongNames), extension(Extension)
+    {
+    }
+    CmdSwitchOutput(const CmdSwitchOutput& orig) = default;
+    virtual int Parse(const char* data) override;
+
+  private:
+    const char* extension;
 };
 class CmdSwitchDefine : public CmdSwitchBase
 {
-    public:
-        CmdSwitchDefine(CmdSwitchParser &parser, char SwitchChar) : CmdSwitchBase(parser, SwitchChar) {}
-        CmdSwitchDefine(const CmdSwitchDefine &orig) : CmdSwitchBase(orig) { defines = orig.defines; }
-        virtual ~CmdSwitchDefine();
-        virtual int Parse(const char *data);
-        struct define {
-            std::string name;
-            std::string value;
-        };
-        int GetCount() const { return defines.size(); }
-        define *GetValue(int index);
-    private:
-        std::vector<define *> defines;
+  public:
+    CmdSwitchDefine(CmdSwitchParser& parser, char SwitchChar, std::deque<std::string> LongNames = {}) :
+        CmdSwitchBase(parser, SwitchChar, LongNames)
+    {
+    }
+    CmdSwitchDefine(const CmdSwitchDefine& orig) = default;
+    virtual ~CmdSwitchDefine();
+    virtual int Parse(const char* data) override;
+    struct define
+    {
+        std::string name;
+        std::string value;
+        int argnum;
+    };
+    int GetCount() const { return defines.size(); }
+    define* GetValue(int index);
+    virtual void SetArgNum(int an) override
+    {
+        if (defines.size())
+            defines.back()->argnum = an;
+    }
+
+  private:
+    std::vector<std::unique_ptr<define>> defines;
 };
 class CmdSwitchFile : public CmdSwitchString
 {
-    public:
-        CmdSwitchFile(CmdSwitchParser &parser, char SwitchChar) : CmdSwitchString(parser, SwitchChar), Parser(&parser), argc(0), argv(nullptr) {}
-        CmdSwitchFile(CmdSwitchParser &parser) : CmdSwitchString(), Parser(&parser), argc(0), argv(nullptr) { }
+  public:
+    CmdSwitchFile(CmdSwitchParser& parser, char SwitchChar, std::deque<std::string> LongNames = {}) :
+        CmdSwitchString(parser, SwitchChar, '\0', LongNames), Parser(&parser), argc(0), argv(nullptr)
+    {
+    }
+    CmdSwitchFile(CmdSwitchParser& parser) : CmdSwitchString(), Parser(&parser), argc(0), argv(nullptr) {}
 
-        virtual int Parse(const char *data);
-        int GetCount() const { return argc; }
-        char ** const GetValue() { return argv; }	
-    protected:
-        void Dispatch(char *data);
-        char *GetStr(char *);
-    private:
-        int argc;
-        char **argv;
-        CmdSwitchParser *Parser;
-} ;
+    virtual int Parse(const char* data) override;
+
+    int GetCount() const { return argc; }
+    char** const GetValue() { return argv.get(); }
+
+  protected:
+    void Dispatch(char* data);
+    char* GetStr(char*);
+
+  private:
+    int argc;
+    std::unique_ptr<char*[]> argv;
+    CmdSwitchParser* Parser;
+};
 class CmdSwitchParser
 {
-    public:
-        CmdSwitchParser() {}
-        ~CmdSwitchParser() {}
-        
-        bool Parse(int *argc, char **argv);
-        
-        CmdSwitchParser &operator +=(CmdSwitchBase *Switch)
-        {
-            switches.insert(Switch);
-            return *this;
-        }
-    private:
-        struct plt
-        {
-            bool operator ()(const CmdSwitchBase *left, const CmdSwitchBase *right) const
-            {
-                return left->GetSwitchChar() < right->GetSwitchChar();
-            }
-        } ;
-        std::set<CmdSwitchBase *, plt> switches;
-} ;
+  public:
+    CmdSwitchParser() : nologo(*this, '!', false, {"nologo"}) {}
+    ~CmdSwitchParser() {}
+
+    bool Parse(const std::string& v, int* argc, char* argv[]);
+
+    bool Parse(int* argc, char* argv[]);
+
+    CmdSwitchParser& operator+=(CmdSwitchBase* Switch)
+    {
+        switches.insert(Switch);
+        return *this;
+    }
+
+    CmdSwitchBase* Find(const char* sw, bool useLongNames, bool toErr, bool longErr);
+
+  protected:
+    void ScanEnv(char* output, size_t len, const char* string);
+
+  private:
+    std::set<CmdSwitchBase*> switches;
+    CmdSwitchBool nologo;
+};
 #endif
