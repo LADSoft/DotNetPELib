@@ -1,5 +1,15 @@
+Version 4.00:
+        add license.txt and copying files
+        update for .net core
+        update as per latest from orange c
+        support at least parsing the CMOD_OPT and CMOD_REQD type elements
+        handle reading pointer/array types better
+        allow loading of dlls that don't have exactly five corelib streams
+        allow loading of dlls that use the alternate location for the pointers to the cor20 header structure
+        search for managed libraries on the path
+
 Version 3.04:
-      make use of maps with strings a little faster
+        make use of maps with strings a little faster
 
 Version 3.03:
 	add support for explicit types (for sizeof)

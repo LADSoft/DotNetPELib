@@ -85,7 +85,7 @@ bool Method::ILSrcDump(PELib& peLib) const
         {
             // allow C# to use ...
             peLib.Out() << "\t.param\t[" << prototype_->ParamCount() << "]" << std::endl;
-            peLib.Out() << "\t.custom instance void [mscorlib]System.ParamArrayAttribute::.ctor() = ( 01 00 00 00 )" << std::endl;
+            peLib.Out() << "\t.custom instance void [" + peLib.GetRuntimeName() + "]System.ParamArrayAttribute::.ctor() = (01 00 00 00)" << std::endl;
         }
         if (varList_.size())
         {
@@ -361,7 +361,7 @@ bool Method::PEDump(PELib& peLib)
             if (!attributeType && !attributeData)
             {
                 size_t ctor_index = 0;
-                AssemblyDef* assembly = peLib.MSCorLibAssembly();
+                AssemblyDef* assembly = peLib.LoadRuntimeAssembly();
                 void* result = nullptr;
                 peLib.Find("System.ParamArrayAttribute::.ctor", &result, nullptr, assembly);
                 if (result)

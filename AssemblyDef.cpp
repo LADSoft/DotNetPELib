@@ -376,11 +376,13 @@ void AssemblyDef::Load(PELib& lib, PEReader& reader)
                         flags |= Qualifiers::Explicit;
                     if (entry->flags_ & TypeDefTableEntry::Sealed)
                         flags |= Qualifiers::Sealed;
+                    if (entry->flags_ & TypeDefTableEntry::BeforeFieldInit)
+                        flags |= Qualifiers::BeforeFieldInit;
                     if ((entry->flags_ & TypeDefTableEntry::StringFormatMask) == TypeDefTableEntry::AnsiClass)
                         flags |= Qualifiers::Ansi;
 
-                    if (name_ == "mscorlib" && entry->extends_.tag_ == TypeDefOrRef::TypeDef && n < classes.size() && classes[n] &&
-                        classes[n]->Name() == "Enum")
+                    if (entry->extends_.tag_ == TypeDefOrRef::TypeDef && n < classes.size() && classes[n] &&
+                        name_ == lib.GetRuntimeName() && classes[n]->Name() == "Enum")
                     {
                         // Assumes namespace system, which is probably safe since we contexted to
                         // mscorlib.dll
@@ -475,6 +477,7 @@ void AssemblyDef::Load(PELib& lib, PEReader& reader)
                             break;
                     }
                     bool done = false;
+                    bool foundObject = false;
                     int index = -1;
                     while (!done)
                     {
@@ -495,11 +498,12 @@ void AssemblyDef::Load(PELib& lib, PEReader& reader)
                                     entry = static_cast<TypeDefTableEntry*>(table2[index]);
                                     if (!classes[index])
                                     {
-                                        done = true;
+                                        done = false;
                                     }
                                     else if (classes[index]->Name() == "Object" || classes[index]->Name() == "Enum")
                                     {
-                                        done = false;
+                                        done = foundObject;
+                                        foundObject = true;
                                     }
                                     else if (classes[index]->Name() == "ValueType")
                                     {

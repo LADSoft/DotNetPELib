@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -18,10 +18,30 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="error_codes.h" />
+    <ClInclude Include="fxrutils.h" />
+    <ClInclude Include="fxr_resolver.h" />
+    <ClInclude Include="fx_ver.h" />
+    <ClInclude Include="hostfxr.h" />
+    <ClInclude Include="longfile.h" />
+    <ClInclude Include="pal.h" />
+    <ClInclude Include="runtime_version.h" />
+    <ClInclude Include="_version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="fxrutils.cpp" />
+    <ClCompile Include="fxr_resolver.cpp" />
+    <ClCompile Include="fx_ver.cpp" />
+    <ClCompile Include="longfile.windows.cpp" />
+    <ClCompile Include="pal.windows.cpp" />
+    <ClCompile Include="trace.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{9E09E239-7370-4CBC-A82E-40DBCC0947F3}</ProjectGuid>
+    <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>DotNetPELib</RootNamespace>
+    <ProjectGuid>{047ac59d-a120-4b63-bf7d-4c560c68d643}</ProjectGuid>
+    <RootNamespace>libhostfxr</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -29,27 +49,27 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>NotSet</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>NotSet</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>NotSet</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>NotSet</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -69,119 +89,82 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>FALLBACK_HOST_OS="win10";TARGET_OS_WINDOWS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>FALLBACK_HOST_OS="win10";FEATURE_APPHOST;UNICODE;TARGET_WINDOWS;REPO_COMMIT_HASH="static";HOST_POLICY_PKG_REL_DIR="static";HOST_POLICY_PKG_NAME="static";TARGET_X86;CURRENT_ARCH_NAME="x86";WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>.\;..\apphost</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>FALLBACK_HOST_OS="win10";TARGET_OS_WINDOWS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>FALLBACK_HOST_OS="win10";TARGET_OS_WINDOWS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>FALLBACK_HOST_OS="win10";FEATURE_APPHOST;UNICODE;TARGET_WINDOWS;REPO_COMMIT_HASH="static";HOST_POLICY_PKG_REL_DIR="static";HOST_POLICY_PKG_NAME="static";TARGET_X86;CURRENT_ARCH_NAME="x86";WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>.\;..\apphost</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>FALLBACK_HOST_OS="win10";FEATURE_APPHOST;UNICODE;TARGET_WINDOWS;REPO_COMMIT_HASH="static";HOST_POLICY_PKG_REL_DIR="static";HOST_POLICY_PKG_NAME="static";TARGET_AMD64;CURRENT_ARCH_NAME="x64";_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>.\;..\apphost</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>FALLBACK_HOST_OS="win10";TARGET_OS_WINDOWS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>FALLBACK_HOST_OS="win10";FEATURE_APPHOST;UNICODE;TARGET_WINDOWS;REPO_COMMIT_HASH="static";HOST_POLICY_PKG_REL_DIR="static";HOST_POLICY_PKG_NAME="static";TARGET_AMD64;CURRENT_ARCH_NAME="x64";NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>.\;..\apphost</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <Text Include="ChangeLog.txt" />
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="bigdigits.h" />
-    <ClInclude Include="bigdtypes.h" />
-    <ClInclude Include="DLLExportReader.h" />
-    <ClInclude Include="DotNetPELib.h" />
-    <ClInclude Include="MZHeader.h" />
-    <ClInclude Include="PEFile.h" />
-    <ClInclude Include="PEHeader.h" />
-    <ClInclude Include="RSAEncoder.h" />
-    <ClInclude Include="sha1.h" />
-    <ClInclude Include="targetver.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Allocator.cpp" />
-    <ClCompile Include="AssemblyDef.cpp" />
-    <ClCompile Include="bigdigits.cpp" />
-    <ClCompile Include="Class.cpp" />
-    <ClCompile Include="CodeContainer.cpp" />
-    <ClCompile Include="CreateGUID.cpp" />
-    <ClCompile Include="CustomAttributeContainer.cpp" />
-    <ClCompile Include="DataContainer.cpp" />
-    <ClCompile Include="DLLExportReader.cpp" />
-    <ClCompile Include="Enum.cpp" />
-    <ClCompile Include="Field.cpp" />
-    <ClCompile Include="Instruction.cpp" />
-    <ClCompile Include="Method.cpp" />
-    <ClCompile Include="MethodSignature.cpp" />
-    <ClCompile Include="NameSpace.cpp" />
-    <ClCompile Include="NetCore.cpp" />
-    <ClCompile Include="NetSignature.cpp" />
-    <ClCompile Include="Operand.cpp" />
-    <ClCompile Include="PECor20Headers.cpp" />
-    <ClCompile Include="PELib.cpp" />
-    <ClCompile Include="PELibError.cpp" />
-    <ClCompile Include="PEReader.cpp" />
-    <ClCompile Include="PEWriter.cpp" />
-    <ClCompile Include="Property.cpp" />
-    <ClCompile Include="Qualifiers.cpp" />
-    <ClCompile Include="RSAEncoder.cpp" />
-    <ClCompile Include="sha1.cpp" />
-    <ClCompile Include="Type.cpp" />
-    <ClCompile Include="Value.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="libhostfxr\libhostfxr.vcxproj">
-      <Project>{047ac59d-a120-4b63-bf7d-4c560c68d643}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
