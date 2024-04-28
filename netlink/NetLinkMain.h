@@ -52,7 +52,7 @@ protected:
     bool LoadImage(CmdFiles &files);
     bool Validate();
     bool CreateExecutable(CmdFiles &files);
-    bool NetLinkMain::LoadAssembly(const char* assemblyName);
+    bool LoadAssembly(const char* assemblyName);
 
     DotNetPELib::MethodSignature *LookupSignature(const char * name);
     DotNetPELib::Field *LookupField(const char *name);
