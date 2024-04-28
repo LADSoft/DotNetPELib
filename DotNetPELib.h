@@ -1655,6 +1655,7 @@ namespace DotNetPELib
             else
                 return "mscorlib";
         }
+        NetCore* NetCoreInstance() const { return netCore_; }
     protected:
         void SplitPath(std::vector<std::string> & split, std::string path);
         bool ILSrcDumpHeader();

@@ -367,6 +367,11 @@ namespace DotNetPELib
                    return LoadAssembly(assembly, "System.Private.CoreLib", major, minor, build, revision, created);
                 }
             }
+            else
+            {
+                if (assembly->IsLoaded())
+                    return 1;
+            }
             auto rv = LoadAssembly(assembly, assemblyName, major, minor, build, revision, created);
             if (rv)
             {

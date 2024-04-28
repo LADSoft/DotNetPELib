@@ -258,7 +258,12 @@ AssemblyDef* AssemblyDef::ObjIn(PELib& peLib, bool definition)
     if (ch == 'r')
     {
         std::string name = peLib.UnformatName();
-        peLib.LoadAssembly(name);
+#ifdef TARGET_OS_WINDOWS
+        if (peLib.NetCoreInstance())
+            peLib.NetCoreInstance()->LoadAssembly(name);
+        else
+#endif
+            peLib.LoadAssembly(name);
     }
     else if (ch == 'b')
     {
