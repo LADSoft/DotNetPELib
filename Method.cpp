@@ -569,6 +569,11 @@ void Method::OptimizeLocals(PELib& peLib)
         }
     }
     std::sort(varList_.begin(), varList_.end(), [](const Local* left, const Local* right) { return left->Uses() > right->Uses(); });
+    int i;
+    for (i=varList_.size(); i > 0; i--)
+        if (varList_[i-1]->Uses())
+            break;
+    varList_.resize(i);
     int index = 0;
     for (auto a : varList_)
     {
