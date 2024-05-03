@@ -8,6 +8,7 @@ Version 4.00:
         allow loading of dlls that use the alternate location for the pointers to the cor20 header structure
         search for managed libraries on the path
         elide unused variables from function argument lists:
+        fix bugs in optimizing locals
 
 Version 3.04:
         make use of maps with strings a little faster
